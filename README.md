@@ -10,7 +10,7 @@ A downloadable executable that checks the connectivity from your client machine 
  * Windows 10 (x96-64) TODO; link
  * Max OS X TODO (x86-64) TODO; link
 
-These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's releases page TODO: link.
+These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's (releases page)[releases]
 
 ## Checks Performed
 
@@ -76,6 +76,11 @@ cargo build
 cargo run -- "mongodb+srv://main_user:Password1@testcluster.s703u.mongodb.net/"
 ```
 
+ * _OPTIONAL_: Build a _production release_ version of the project's executable:
+```console
+cargo build --release
+```
+ 
  * _OPTIONAL_: Run the project's _unit tests_:
 ```console
 cargo test
