@@ -6,13 +6,11 @@ A downloadable executable that checks the connectivity from your client machine 
 
 ## Downloads
 
-Binary executables to download and run:
-
  * Linux (x86-64) TODO; link
  * Windows 10 (x96-64) TODO; link
  * Max OS X TODO (x86-64) TODO; link
 
-These download links are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's releases page TODO: link.
+These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's releases page TODO: link.
 
 ## Checks Performed
 

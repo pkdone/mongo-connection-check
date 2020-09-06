@@ -425,9 +425,8 @@ fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus]
                 }
                 
                 stages_status[stage_index].advice.push(format!("From this machine launch a \
-                    terminal and use the netcat tool to see if a socket can be successfully opened\
-                         to the server:port:  'nc -zv -w 5 {} {}'", &hostnm_ipaddr_map.hostname, 
-                         port));
+                    terminal and use the netcat tool to see if a socket can be successfully opened \
+                    to the server:port:  'nc -zv -w 5 {} {}'", &hostnm_ipaddr_map.hostname, port));
                 0
             }
         }
