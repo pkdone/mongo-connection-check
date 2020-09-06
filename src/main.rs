@@ -101,7 +101,8 @@ fn main() {
         .version("0.8.1")
         .before_help("")
         .about("\nChecks the connectivity from your machine to a remote MongoDB deployment \n\
-            The deployment may be hosted in Atlas or may be self-managed on-prem/in-cloud")
+            If a connection can't be made, outputs advice on how to diagnose and potentially fix \n\
+            The MongoDB deployment may be hosted in Atlas or may be self-managed on-prem/in-cloud")
         .arg(Arg::with_name("username")
             .short("u")
             .long("username")
