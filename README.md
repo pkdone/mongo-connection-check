@@ -1,6 +1,6 @@
 # mongo-connection-check
 
-A downloadable binary tool that checks the connectivity from your machine to a remote MongoDB deployment, and if a connection cannot be made, provides advice on how to diagnose and potentially fix.
+A downloadable executable, that when run, checks the connectivity from your machine to a remote MongoDB deployment, and if a connection cannot be made, provides advice on how to diagnose and potentially fix.
 . The MongoDB deployment tested could be self-managed database on-prem/in-cloud or hosted in the [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) DBaaS in the cloud.
 
 ![Screenshot of mongo-connection-check](.tool_pic.png)
@@ -29,7 +29,9 @@ Supported target MongoDB deployments include MongoDB versions 3.6 or greater, wh
  
 ## Where To Download
 
-TODO link to github releases + mention of any other dependencies
+Download from the project's releases page. TODO Link
+
+TODO: mention any other dependences
 
 ## How To Run
 
@@ -39,25 +41,25 @@ Open a terminal/shell and run the following (in this example to connect to a loc
 ./mongo-connection-check mongodb://localhost
 ```
 
-To see full help usage, include a `-h` parameter, for example:
+To see full __help)) usage, include a `-h` parameter, for example:
 
 ```console
 ./mongo-connection-check -h
 ```
 
-Example for attempting to connect to a remote MongoDB Atlas deployment, using a SRV service name with a username & password embedded in the MongoDB URL:
+__Example__ for attempting to connect to a remote MongoDB __Atlas__ deployment, using a __SRV service name__ with a username & password embedded in the MongoDB URL:
 
 ```console
 ./mongo-connection-check "mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/?retryWrites=true"
 ```
 
-Example for attempting to connect to a remote MongoDB Atlas deployment, using a SRV service name with a username & password provided as parameters separate from the MongoDB URL:
+__Example__ for attempting to connect to a remote MongoDB __Atlas__ deployment, using a SRV service name with a __username & password provided as parameters__ separate from the MongoDB URL:
 
 ```console
 ./mongo-connection-check -u mysyr -p pswd "mongodb+srv://ctr.a1b2s.mongodb.net/?retryWrites=true"
 ```
 
-Example for attempting to connect to a remote self-managed MongoDB cluster deployment, using a seed list of individual server hostnames & ports in the MongoDB URL, with TLS enabled (username and password not specified in this example):
+__Example__ for attempting to connect to a remote __self-managed MongoDB cluster deployment__, using a __seed list__ of individual server hostnames & ports in the MongoDB URL, with TLS enabled (username and password not specified in this example):
 
 ```console
 ./mongo-connection-check "mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/test?tls=true"
