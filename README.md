@@ -4,7 +4,19 @@ A downloadable executable that checks the connectivity from your client machine 
 
 ![Screenshot of the mongo-connection-check tool](.tool_pic.png)
 
-Attempts to perform the following 7 checks sequentially, terminating as soon as one of the checks fails (if any), and providing advice on how to then diagnose & potentially fix the connectivity issue:
+## Downloads
+
+Binary executables to download and run:
+
+ * Linux (x86-64) TODO; link
+ * Windows 10 (x96-64) TODO; link
+ * Max OS X TODO (x86-64) TODO; link
+
+These download links are for the latest version of _mongo-connection-check_ (version TODO). For earlier versions, see this project's releases page TODO: link.
+
+## Checks Performed
+
+The tool will attempt to perform the following 7 checks sequentially, terminating as soon as one of the checks fails (if any), and providing advice on how to then diagnose & potentially fix the connectivity issue:
  1. __URL-CHECK__. Confirms the URL contains a seed list of target server(s)/port(s) to try, or a DNS SRV service name.
  2. __MEMBERS-CHECK__. Determines the seed list of individual servers in the deployment (specifically if the URL defines a service name, looks up the SRV service in DNS to obtain the cluster's server member addresses and ports).
  3. __DNS-IP-CHECK__. Determines the IP addresses of each of the individual servers in the deployment, via DNS lookups.
@@ -21,17 +33,7 @@ Any MongoDB deployments of MongoDB versions 3.6+, if self managed, and MongoDB v
  * A sharded cluster
  * An Atlas M0/M2/M5 shared tier _(which is fronted by a reverse proxy, under the covers)_
  
-## Biary Executable Downloads
-
- * Linux (x86-64) TODO; link
- * Windows 10 (x96-64) TODO; link
- * Max OS X TODO (x86-64) TODO; link
-
-These download links are for the latest version of _mongo-connection-check_ (version TODO). For earlier versions, see this project's releases page TODO: link.
-
-TODO: mention any other dependences
-
-## How To Run
+## Steps To Run
 
 Open a terminal/shell and run the following (in this example to connect to a local MongoDB standalone server):
 
@@ -63,7 +65,7 @@ __Example__ command line for attempting to connect to a remote __self-managed Mo
 ./mongo-connection-check "mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/test?tls=true"
 ```
 
-## How to Build The Project
+## Building The Project
 
 _(ensure you've cloned/copied this GitHub project first to your local machine)_
 
@@ -91,7 +93,7 @@ cargo clippy
 cat src/main.rs | awk 'length($0) > 100'
 ```
 
-## Potential TODOs For The Future
+## Potential Future Enhancements
 
 * __Concurrent Socket Tests__. Change the stage4 check stage to use an async socket API and then concurrently peform a socket test for each member of the server (with the 4 second timeout configured for this tool, this should mean that for 3 cluster members, the total time taken will be just over 4 seconds rather than around 12 seconds, that would currently be incurred, for example).
 * __Perform ICMP Ping Test__. Change part of the stage4 socket check stage to perform an ICMP PING test (sometimes a ping may not get through the firewall but a socket will, or vice versa, so if a socket test fails then try a ping and if that succeeds, at least make that information available, as it will help with any subsequent connectivity diagnosis).
