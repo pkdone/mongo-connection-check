@@ -1,6 +1,6 @@
 # mongo-connection-check
 
-A downloadable executable that checks the connectivity from your client machine to a remote MongoDB database deployment, If a connection cannot be made, provides advice on how to diagnose and potentially fix the connection issue. The MongoDB deployment tested can be a self-managed database on-prem/in-cloud or a hosted in the [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) DBaaS in the cloud.
+A downloadable executable that checks the connectivity from your client machine to a remote MongoDB database deployment. If a connection cannot be made, provides advice on how to diagnose and fix the connection issue. The MongoDB deployment tested can be a self-managed database on-prem/in-cloud or a hosted in the [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) DBaaS in the cloud.
 
 ![Screenshot of the mongo-connection-check tool](.tool_pic.png)
 
@@ -12,7 +12,7 @@ Binary executables to download and run:
  * Windows 10 (x96-64) TODO; link
  * Max OS X TODO (x86-64) TODO; link
 
-These download links are for the latest version of _mongo-connection-check_ (version TODO). For earlier versions, see this project's releases page TODO: link.
+These download links are for the latest version of _mongo-connection-check_ (version 0.8.1). For earlier versions, see this project's releases page TODO: link.
 
 ## Checks Performed
 
