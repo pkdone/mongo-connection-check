@@ -10,7 +10,7 @@ A downloadable executable that checks the connectivity from your client machine 
  * Windows 10 (x96-64) TODO; link
  * Max OS X TODO (x86-64) TODO; link
 
-These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](releases)
+These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
 TODO: add windows C++ dependecies: 
 
