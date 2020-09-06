@@ -12,11 +12,11 @@ Binary executables to download and run:
  * Windows 10 (x96-64) TODO; link
  * Max OS X TODO (x86-64) TODO; link
 
-These download links are for the latest version of _mongo-connection-check_ (version 0.8.1). For earlier versions, see this project's releases page TODO: link.
+These download links are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's releases page TODO: link.
 
 ## Checks Performed
 
-The tool will attempt to perform the following 7 checks sequentially, terminating as soon as one of the checks fails (if any), and providing advice on how to then diagnose & potentially fix the connectivity issue:
+The tool will attempt to perform the following 7 checks sequentially, terminating as soon as one of the checks fails (if any), and providing advice on how to then diagnose & fix the connectivity issue:
  1. __URL-CHECK__. Confirms the URL contains a seed list of target server(s)/port(s) to try, or a DNS SRV service name.
  2. __MEMBERS-CHECK__. Determines the seed list of individual servers in the deployment (specifically if the URL defines a service name, looks up the SRV service in DNS to obtain the cluster's server member addresses and ports).
  3. __DNS-IP-CHECK__. Determines the IP addresses of each of the individual servers in the deployment, via DNS lookups.
