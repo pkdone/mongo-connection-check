@@ -4,7 +4,7 @@ A downloadable executable that checks the connectivity from your client machine 
 
 ![Screenshot of the mongo-connection-check tool](.tool_pic.png)
 
-This tool is based on the [Some Tips for Diagnosing Client Connection Issues for MongoDB Atlas](http://pauldone.blogspot.com/2019/12/tips-for-atlas-connectivity.html) blog post.
+This tool is based on the blog post [Some Tips for Diagnosing Client Connection Issues for MongoDB Atlas](http://pauldone.blogspot.com/2019/12/tips-for-atlas-connectivity.html).
 
 ## Downloads
 
