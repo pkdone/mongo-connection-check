@@ -4,7 +4,7 @@ A downloadable executable that checks the connectivity from your client machine 
 
 ![Screenshot of the mongo-connection-check tool](.tool_pic.png)
 
-The checks this tool performs is based on the blog post [Some Tips for Diagnosing Client Connection Issues for MongoDB Atlas](http://pauldone.blogspot.com/2019/12/tips-for-atlas-connectivity.html).
+The checks this tool performs are based on the blog post [Some Tips for Diagnosing Client Connection Issues for MongoDB Atlas](http://pauldone.blogspot.com/2019/12/tips-for-atlas-connectivity.html).
 
 ## Downloads
 
@@ -58,7 +58,7 @@ __Example__ command line for attempting to connect to a remote MongoDB __Atlas__
 __Example__ command line for attempting to connect to a remote MongoDB __Atlas__ deployment, using an example SRV service name with the __username & password provided as parameters__ separate from the MongoDB URL:
 
 ```console
-./mongo-connection-check -u mysyr -p pswd "mongodb+srv://ctr.a1b2s.mongodb.net/?retryWrites=true"
+./mongo-connection-check -u myusr -p pswd "mongodb+srv://ctr.a1b2s.mongodb.net/?retryWrites=true"
 ```
 
 __Example__ command line for attempting to connect to a remote __self-managed MongoDB cluster deployment__, using an example __seed list__ of individual server hostnames & ports in the MongoDB URL, with TLS enabled (username and password not specified in this example):
@@ -77,7 +77,7 @@ _(ensure you've cloned/copied this GitHub project first to your local machine)_
  
 ```console
 cargo build
-cargo run -- "mongodb+srv://main_user:Password1@testcluster.s703u.mongodb.net/"
+cargo run -- "mongodb+srv://myusr:pswd@mycluster.a113z.mongodb.net"
 ```
 
  * _OPTIONAL_: Build a _production release_ version of the project's executable:
