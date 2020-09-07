@@ -10,48 +10,35 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
 
  * [Linux](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check) (x86-64)
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check.exe) (x86-64)
- * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64) &nbsp;&nbsp;&nbsp;__NOTE:__ Rename this file once download, removing the suffix '_mac'
+ * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64) &nbsp;&nbsp;&nbsp;__NOTE:__ Rename this file once download, __removing the suffix '_mac'__
 
 These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
-## Checks Performed
-
-The tool will attempt to perform the following 7 checks sequentially, terminating as soon as one of the checks fails, and providing advice on how to then diagnose & fix the connectivity issue (if any):
- 1. __URL-CHECK__. Confirms the URL contains a seed list of target server(s)/port(s) to try, or a DNS SRV service name.
- 2. __MEMBERS-CHECK__. Determines the seed list of individual servers in the deployment (specifically if the URL defines a service name, looks up the SRV service in DNS to obtain the cluster's membership).
- 3. __DNS-IP-CHECK__. Determines the IP addresses of each of the individual servers in the deployment, using DNS lookups.
- 4. __SOCKET-CHECK__. Confirms a TCP socket connection can be established to one or more of the target servers in the seed list.
- 5. __DRIVER-CHECK__. Confirms the MongoDB driver can validate the URL (including re-performing the SRV DNS resolution if required).
- 6. __DBPING-CHECK__. Confirms the MongoDB driver can connect to the remote MongoDB deployment using the MongoDB 'dbping' command.
- 7. __HEALTH-CHECK__. Retrieves the running deployment's type (e.g. standalone/replica-set/sharded-cluster/shared-atlas-tier) and, if the deployment is a replica set specifically, the primary & secondary member names and types.
-
-## Supported MongoDB Deployments
-
-Any MongoDB deployments of MongoDB versions 3.6+, if self managed, and MongoDB versions 4.2+, if hosted in Atlas, for any type of deployment topology, including:
- * A standalone single server
- * A replica set
- * A sharded cluster
- * An Atlas M0/M2/M5 shared tier _(which is fronted by a reverse proxy, under the covers)_
- 
 ## How To Run
 
-_(For Windows, replace any occurrence of the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command lines below)_
-
-Change the downloaded binary file's permissions to be executable on your local OS - example terminal/shell command for Linux/Mac shown here:
+Change the downloaded binary file's __permissions to be executable__ on your local OS - example terminal/shell command for Linux/Mac shown here:
 
 ```console
 chmod u+x mongo-connection-check
 ```
 
-&nbsp;&nbsp;__NOTE__: On __Windows__ you will be prompted with some dialog boxes to approve the safety of the executable. On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore if you trust this binary you will then need to view the _Security & Privacy_ settings for this file and press the button _Allow Anyway_, as shown below:
+&nbsp;&nbsp;__NOTE__: 
+ * On __Windows__ you will be prompted with some dialog boxes to approve the safety of the executable
+ * On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore, if you trust this binary, you will then need to view the _Security & Privacy_ settings for the downloaded file and press the button __Allow Anyway__ button, as shown below:
  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![Screenshot of Allow Anyway option in Mac OS X](.mac_allow_access.png)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=".mac_allow_access.png" width="370" height="317" alt="Screenshot of Allow Anyway option in Mac OS X"/>
 
-Open a terminal/prompt/shell and run the following after first setting the downloaded binary's permissions to be executable (in this example to connect to a local MongoDB standalone server):
+__Open a terminal/prompt/shell and run the following__ _(in this example, to connect to a local MongoDB standalone server)_:
 
 ```console
 ./mongo-connection-check mongodb://localhost
 ```
+
+&nbsp;&nbsp;&nbsp;&nbsp;_On Windows, first replace the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command line shown above (and also in the examples below)_
+
+
+
+### Further Help
 
 To see the full __help__ information for this tool, include a `-h` parameter:
 
@@ -77,6 +64,25 @@ __Example__ command line for attempting to connect to a remote __self-managed Mo
 ./mongo-connection-check "mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/test?tls=true"
 ```
 
+## Checks Performed
+
+The tool will attempt to perform the following 7 checks sequentially, terminating as soon as one of the checks fails, and providing advice on how to then diagnose & fix the connectivity issue (if any):
+ 1. __URL-CHECK__. Confirms the URL contains a seed list of target server(s)/port(s) to try, or a DNS SRV service name.
+ 2. __MEMBERS-CHECK__. Determines the seed list of individual servers in the deployment (specifically if the URL defines a service name, looks up the SRV service in DNS to obtain the cluster's membership).
+ 3. __DNS-IP-CHECK__. Determines the IP addresses of each of the individual servers in the deployment, using DNS lookups.
+ 4. __SOCKET-CHECK__. Confirms a TCP socket connection can be established to one or more of the target servers in the seed list.
+ 5. __DRIVER-CHECK__. Confirms the MongoDB driver can validate the URL (including re-performing the SRV DNS resolution if required).
+ 6. __DBPING-CHECK__. Confirms the MongoDB driver can connect to the remote MongoDB deployment using the MongoDB 'dbping' command.
+ 7. __HEALTH-CHECK__. Retrieves the running deployment's type (e.g. standalone/replica-set/sharded-cluster/shared-atlas-tier) and, if the deployment is a replica set specifically, the primary & secondary member names and types.
+
+## Supported MongoDB Deployments
+
+Any MongoDB deployments of MongoDB versions 3.6+, if self managed, and MongoDB versions 4.2+, if hosted in Atlas, for any type of deployment topology, including:
+ * A standalone single server
+ * A replica set
+ * A sharded cluster
+ * An Atlas M0/M2/M5 shared tier _(which is fronted by a reverse proxy, under the covers)_
+ 
 ## Building The Project
 
 _(ensure you've cloned/copied this GitHub project first to your local machine)_
