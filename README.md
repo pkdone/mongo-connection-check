@@ -10,7 +10,7 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
 
  * [Linux](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check) (x86-64)
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check.exe) (x86-64)
- * Max OS X (x86-64) <- LINK NOT AVAILABLE YET
+ * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64)  __NOTE:__ Rename the file once download, removing the suffix '_mac'
 
 These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
@@ -35,7 +35,7 @@ Any MongoDB deployments of MongoDB versions 3.6+, if self managed, and MongoDB v
  
 ## Steps To Run
 
-_(For Windows, replace the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command lines below)_
+_(For Windows, replace any occurrence of the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command lines below)_
 
 Open a terminal/prompt/shell and run the following after first setting the downloaded binary's permissions to be executable (in this example to connect to a local MongoDB standalone server):
 
