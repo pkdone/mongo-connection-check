@@ -10,7 +10,7 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
 
  * [Linux](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check) (x86-64)
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check.exe) (x86-64)
- * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64) &nbsp;&nbsp;&nbsp;__NOTE:__ Rename this file once download, __removing the suffix '_mac'__
+ * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64) &nbsp;&nbsp;&nbsp;__NOTE:__ Rename this file once download, __removing the suffix '\_mac'__
 
 These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
