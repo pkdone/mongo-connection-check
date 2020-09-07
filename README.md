@@ -78,6 +78,11 @@ cargo build
 cargo run -- "mongodb+srv://main_user:Password1@testcluster.s703u.mongodb.net/"
 ```
 
+ * _OPTIONAL_: Build a _production release_ version of the project's executable:
+```console
+cargo build --release
+```
+ 
  * _OPTIONAL_: Run the project's _unit tests_:
 ```console
 cargo test
