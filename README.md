@@ -10,7 +10,7 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
 
  * [Linux](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check) (x86-64)
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check.exe) (x86-64)
- * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64)  __NOTE:__ Rename the file once download, removing the suffix '_mac'
+ * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check_mac) (x86-64) &nbsp;&nbsp;&nbsp;__NOTE:__ Rename this file once download, removing the suffix '_mac'
 
 These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
@@ -40,12 +40,12 @@ _(For Windows, replace any occurrence of the text `./mongo-connection-check` wit
 Change the downloaded binary file's permissions to be executable on your local OS - example terminal/shell command for Linux/Mac shown here:
 
 ```console
-mongo-connection-check
+chmod u+x mongo-connection-check
 ```
 
 &nbsp;&nbsp;__NOTE__: On __Windows__ you will be prompted with some dialog boxes to approve the safety of the executable. On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore if you trust this binary you will then need to view the _Security & Privacy_ settings for this file and press the button _Allow Anyway_, as shown below:
  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![Screenshot of Allow Anyway option in Mac OS X](.mac_allow_access.png)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![Screenshot of Allow Anyway option in Mac OS X](.mac_allow_access.png)
 
 Open a terminal/prompt/shell and run the following after first setting the downloaded binary's permissions to be executable (in this example to connect to a local MongoDB standalone server):
 
