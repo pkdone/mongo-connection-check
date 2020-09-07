@@ -71,7 +71,7 @@ __Example__ command line for attempting to connect to a remote __self-managed Mo
 
 _(ensure you've cloned/copied this GitHub project first to your local machine)_
 
- 1. Instal the latest version of [Rust is installed](https://www.rust-lang.org/tools/install), if it isn't already, via the __rustup__ utility, including the _rustc_ compiler & the _cargo_ package/build manager. _NOTE:_ If building on Windows 10, first ensure you have Microsoft's [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) installed (specifically when running that installer choose the _C++ build tools_ option)
+ 1. Install the latest version of the [Rust development environment](https://www.rust-lang.org/tools/install), if it isn't already installed, via the __rustup__ utility, including the _rustc_ compiler & the _cargo_ package/build manager. _NOTE:_ If building on Windows 10, first ensure you have Microsoft's [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) installed (specifically when running that installer choose the _C++ build tools_ option)
 
  2. From a terminal/prompt/shell, change directory to this project's root folder and then run Rust's _cargo_ command to build the project and run the debug version of the tool executable, as shown in the example below (change the URL to match the specific MongoDB database deployment target you want to test):
  
