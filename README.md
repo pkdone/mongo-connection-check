@@ -22,21 +22,17 @@ Change the downloaded binary file's __permissions to be executable__ on your loc
 chmod u+x mongo-connection-check
 ```
 
-&nbsp;&nbsp;__NOTE__: 
- * On __Windows__ you will be prompted with some dialog boxes to approve the safety of the executable
- * On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore, if you trust this binary, you will then need to view the _Security & Privacy_ settings for the downloaded file and press the button __Allow Anyway__ button, as shown below:
- 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=".mac_allow_access.png" width="370" height="317" alt="Screenshot of Allow Anyway option in Mac OS X"/>
-
 __Open a terminal/prompt/shell and run the following__ _(in this example, to connect to a local MongoDB standalone server)_:
 
 ```console
 ./mongo-connection-check mongodb://localhost
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp;_On Windows, first replace the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command line shown above (and also in the examples below)_
-
-
+&nbsp;&nbsp;__NOTE__: 
+ * On __Windows__ first replace the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command line shown above; you will also be prompted with some security dialog boxes to approve the safety of the executable
+ * On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore, if you trust this binary, you will then need to view the _Security & Privacy_ settings for the downloaded file and press the button __Allow Anyway__ button, as shown below:
+ 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=".mac_allow_access.png" width="370" height="317" alt="Screenshot of Allow Anyway option in Mac OS X"/>
 
 ### Further Help
 
