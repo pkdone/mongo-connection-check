@@ -7,7 +7,11 @@ use std::time::Duration;
 use std::process::exit;
 use std::convert::From;
 use std::net::{TcpStream, SocketAddr, IpAddr};
-use tokio::runtime::Runtime;
+use futures::future::join_all;
+use tokio::{
+    task,
+    runtime::Runtime,
+};
 use regex::Regex;
 use trust_dns_resolver::{
      AsyncResolver, TokioAsyncResolver, TokioConnection, TokioConnectionProvider,
@@ -18,7 +22,7 @@ use mongodb::{
     Client,
     bson::{Bson, doc, Document},
     options::{ClientOptions, StreamAddress, Credential},
-    error::{Error as MongoError, ErrorKind as MongoErrorKind}
+    error::{Error as MongoError, ErrorKind as MongoErrorKind},
 };
 
 
@@ -81,10 +85,20 @@ struct HostnameIP4AddressMap {
 }
 
 
+struct IPCheckResult {
+    hostname: String,
+    port: u16,
+    ipaddress: IpAddr,
+    result: Result<(), Box<dyn Error + Send + Sync>>,
+}
+
+
 const APP_NAME: &str = "mongo-connection-check";
+const APP_TITLE: &str = "MongoDB Connection Check";
+const APP_VERSION: &str = "0.8.5";
 const MONGO_SRV_PREFIX: &str = "mongodb+srv://";
 const MONGO_SRV_LOOKUP_PREFIX: &str = "_mongodb._tcp.";
-const CONNECTION_TIMEOUT_SECS: u64 = 4;
+const CONNECTION_TIMEOUT_SECS: u64 = 3;
 const MONGODB_DEFAULT_LISTEN_PORT: u16 = 27017;
 const ERR_MSG_PREFIX: &str = " ERROR: ";
 const WRN_MSG_PREFIX: &str = " WARNING: ";
@@ -97,8 +111,8 @@ type AsyncDnsResolver = AsyncResolver<TokioConnection, TokioConnectionProvider>;
 // Main application start point processing startup args
 //
 fn main() {
-    let args = App::new("MongoDB Connection Check")
-        .version("0.8.1")
+    let args = App::new(APP_TITLE)
+        .version(APP_VERSION)
         .before_help("")
         .about("\nChecks the connectivity from your machine to a remote MongoDB deployment \n\
             If a connection can't be made, outputs advice on how to diagnose and potentially fix \n\
@@ -192,7 +206,7 @@ async fn run_checks(stages_status : &mut [StageStatus], url: &str, usr: Option<&
     let hostname_ipaddr_mappings = stage3_dns_ip_check(STAGE3, stages_status, &dns_resolver, 
         &cluster_address).await?;
     // STAGE 4:
-    stage4_ip_socket_check(STAGE4, stages_status, &hostname_ipaddr_mappings)?;
+    stage4_ip_socket_check(STAGE4, stages_status, &hostname_ipaddr_mappings).await?;
     // STAGE 5
     let client_options = stage5_driver_check(STAGE5, stages_status, url, usr, pwd).await?;
     // STAGE 6:
@@ -374,17 +388,16 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
 }
 
 
-// Confirm TCP socket can be established to one or more target servers
+// Try each TCP socket concurrently, see see if TCP connection can be made to each
 //
-fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus],
-                          hostname_ipaddr_map: &[HostnameIP4AddressMap])
-                          -> Result<(), Box<dyn Error>> {
+async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus],
+                                    hostname_ipaddr_maps: &[HostnameIP4AddressMap])
+                                   -> Result<(), Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
-    let mut connect_success_count = 0;
-    let mut resume_os_advice_count_given = false;
-    
-    for hostnm_ipaddr_map in hostname_ipaddr_map {      
+    let mut futures = vec![];
+
+    for hostnm_ipaddr_map in hostname_ipaddr_maps {      
         let port = &hostnm_ipaddr_map.port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT);
         let ipaddress = match hostnm_ipaddr_map.ipaddress {
             Some(value) => value,
@@ -396,20 +409,33 @@ fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus]
             }
         };
 
-        // NOTE: For shared tiers can still open a socket even if whitelist in place            
-        connect_success_count += match try_open_client_tcp_connection(&hostnm_ipaddr_map.ipaddress,
-                                                                      &hostnm_ipaddr_map.port) {
-            Ok(_) => {                                               
-                println!("{}TCP socket connection successfully opened to server '{}:{}' \
-                    (IP address: '{}')", INF_MSG_PREFIX, &hostnm_ipaddr_map.hostname, port,
-                   ipaddress);
+        let fut = task::spawn(async_try_open_client_tcp_connection(
+                    hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
+        futures.push(fut);
+    }   
+
+    let mut connect_success_count = 0;    
+    let mut resume_os_advice_count_given = false;
+    let joined_futures = join_all(futures).await;
+    
+    // NOTE: For shared tiers can still open a socket even if whitelist in place            
+    for fut in joined_futures {
+        let ip_check_result = fut?;
+        
+        connect_success_count += match ip_check_result.result {
+            Ok(_) => {         
+                // &hostnm_ipaddr_map.hostname, port, ipaddress                       
+                println!("{}TCP socket connection successfully opened to server '{}:{}' (IP address\
+                         : '{}')", INF_MSG_PREFIX, ip_check_result.hostname,
+                         ip_check_result.port, ip_check_result.ipaddress);
                 1
             }
             Err(e) => {
                 let err_msg = e.to_string();
+                // ipaddress, &hostnm_ipaddr_map.hostname, port
                 println!("{}Unable to open TCP socket connection to IP Address: '{}' (for server \
-                    '{}:{}') - error message: {}", WRN_MSG_PREFIX, ipaddress, 
-                    &hostnm_ipaddr_map.hostname, port, err_msg);
+                    '{}:{}') - error message: {}", WRN_MSG_PREFIX, ip_check_result.ipaddress,
+                    ip_check_result.hostname, ip_check_result.port, err_msg);
                          
                 if !resume_os_advice_count_given && err_msg.contains("os error 111") {
                     stages_status[stage_index].advice.push("The type of TCP connection error \
@@ -418,20 +444,22 @@ fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus]
                         running and so CANNOT ACCEPT the socket connection. CHECK THE STATE of \
                         the MongoDB deployment servers, in case there is a problem there. If \
                         deployed to Atlas, this situation can happen if the cluster had been \
-                        paused and is now resuming (if this is the case, check the Atlas console \
-                        to see when the cluster is fully resumed and then just try this \
-                        connection check again)".to_string());
+                        paused and is now resuming or vice versa (if this is the case, check the \
+                        Atlas console to see when the cluster is fully resumed/running, and then \
+                        just try this connection check again)".to_string());
                     resume_os_advice_count_given = true;
                 }
                 
+                // &hostnm_ipaddr_map.hostname, port
                 stages_status[stage_index].advice.push(format!("From this machine launch a \
                     terminal and use the netcat tool to see if a socket can be successfully opened \
-                    to the server:port:  'nc -zv -w 5 {} {}'", &hostnm_ipaddr_map.hostname, port));
+                    to the server:port:  'nc -zv -w 5 {} {}'", 
+                    ip_check_result.hostname, ip_check_result.port));
                 0
             }
         }
     }
-        
+
     if connect_success_count <= 0 {
         const MSG: &str = "Unable to open a TCP socket connection to any of the server addresses \
             derived from the URL's seed list";    
@@ -750,15 +778,18 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
 
 // Attempt to open TCP connection to deployment returning OK if successful or throwing error it not
 //
-fn try_open_client_tcp_connection(ipaddress_option: &Option<IpAddr>, port_option: &Option<u16>)
-                                  -> Result<(), Box<dyn Error>> {
-    const MSG: &str = "Issue testing socket connection because received IP address is undefined";
-    let ipaddress = ipaddress_option.ok_or_else(|| Box::new(IOError::new(ErrorKind::InvalidInput,
-        MSG)))?;
-    let socket_addr = SocketAddr::new(ipaddress, port_option.unwrap_or( 
-        MONGODB_DEFAULT_LISTEN_PORT));
-    TcpStream::connect_timeout(&socket_addr, Duration::new(CONNECTION_TIMEOUT_SECS, 0))?;
-    Ok(())
+async fn async_try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr) 
+                                              -> IPCheckResult {
+    let mut ip_check_result = IPCheckResult{ hostname, port, ipaddress, result: Ok(()) };
+    let socket_addr = SocketAddr::new(ipaddress, port);
+    
+    match TcpStream::connect_timeout(&socket_addr, Duration::new(CONNECTION_TIMEOUT_SECS, 0)) {
+        Ok(_) => ip_check_result,
+        Err(e) => {
+            ip_check_result.result = Err(Box::new(e));
+            ip_check_result
+        }
+    }
 }
 
 

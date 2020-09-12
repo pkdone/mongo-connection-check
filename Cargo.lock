@@ -822,10 +822,11 @@ dependencies = [
 
 [[package]]
 name = "mongo-connection-check"
-version = "0.1.0"
+version = "0.8.5"
 dependencies = [
  "clap",
  "domain",
+ "futures",
  "lazy_static",
  "mongodb",
  "regex",

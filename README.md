@@ -114,7 +114,6 @@ cat src/main.rs | awk 'length($0) > 100'
 
 ## Potential Future Enhancements
 
-* __Concurrent Socket Tests__. Change the stage4 check stage to use an async socket API and then concurrently peform a socket test for each member of the server (with the 4 second timeout configured for this tool, this should mean that for 3 cluster members, the total time taken will be just over 4 seconds rather than around 12 seconds, that would currently be incurred for invalid IP address endpoints, for example).
 * __Perform ICMP Ping Test__. Add to part of the stage4 socket check stage to perform an ICMP PING test (sometimes a ping may not get through the firewall but a socket will, or vice versa, so if a socket test fails then try a ping and if that succeeds, at least make that information available, as it will help with any subsequent connectivity diagnosis).
 * __Integration Tests__. Add integration tests to the project to reduce the risk of regressions.
 
