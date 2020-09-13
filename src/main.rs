@@ -199,8 +199,8 @@ fn stage1_url_check(stage_index: usize, stages_status : &mut [StageStatus], url:
             println!("{}{}", ERR_MSG_PREFIX, MSG);
             return Err(MSG.into());        
         } else {        
-            println!("{}The seed list part of the URL is valid as it defines a single SRV service\
-                , not multiple", INF_MSG_PREFIX);    
+            println!("{}The seed list part of the URL is valid as it defines a single SRV service, \
+                not multiple", INF_MSG_PREFIX);    
             println!("{}Therefore, cluster SRV service name & port is: '{}'", INF_MSG_PREFIX,
                 get_displayable_addresses(&cluster_seed_list));
         }            
@@ -239,8 +239,8 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
                     }
 
                     if !has_txt_entry {
-                        println!("{}SRV service for the cluster has DNS TXT parameters \
-                            defined", INF_MSG_PREFIX);                        
+                        println!("{}SRV service for the cluster has DNS TXT parameters defined",
+                            INF_MSG_PREFIX);                        
                     }
                                         
                     addresses
@@ -352,13 +352,13 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
             None => {
                 println!("{}Skipping attempt to open a TCP socket connection to '{}:{}' because \
                     its IP address was not previously resolved in DNS (see warning in previous \
-                    stage)", INF_MSG_PREFIX, &hostnm_ipaddr_map.hostname, port);
+                    stage", INF_MSG_PREFIX, &hostnm_ipaddr_map.hostname, port);
                 continue;
             }
         };
 
         let fut = task::spawn(concurrent_try_open_client_tcp_connection(
-                    hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
+                      hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
         futures.push(fut);
     }   
 
@@ -366,7 +366,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
     let mut resume_os_advice_count_given = false;
     let joined_futures = join_all(futures).await;
     
-    // NOTE: For shared tiers can still open a socket even if whitelist in place
+    // NOTE: For shared tiers can still open a socket (to mongos) even if accesslist in place
     for fut in joined_futures {
         let ip_check_result = fut?;
         
@@ -575,9 +575,9 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
     };
         
     if !is_identified {
-        const MSG: &str = "The driver returned an empty list of server members in response to \
-            the 'ismaster' command and the deployment cannot correctly be identified as a \
-            standalone server, a replica set or a sharded deployment";
+        const MSG: &str = "The driver returned an empty list of server members in response to the \
+            'ismaster' command and the deployment cannot correctly be identified as a standalone, \
+             a replica set or a sharded deployment";
         println!("{}{}", ERR_MSG_PREFIX, MSG);
         stages_status[stage_index].advice.push(ADVC.to_string());
         return Err(MSG.into());
@@ -806,14 +806,14 @@ fn capture_no_connection_advice(stg : &mut StageStatus) {
     stg.advice.push("If using Atlas, via the Atlas console, check the cluster is NOT PAUSED and \
         resume it if is paused".to_string());
     stg.advice.push("If not using Atlas to host the MongoDB deployment, check the firewall rules \
-        for the network hosting the deployment to ensure it permits MongoDB TCP connections on \
-        the configured ports - check NOT BLOCKED".to_string());
+        for the network hosting the deployment to ensure it permits MongoDB TCP connections on the \
+        configured ports - check NOT BLOCKED".to_string());
     stg.advice.push("Check any local firewalls on this machine and in your local network, to \
         ensure that MongoDB TCP network connections to outside your network are NOT BLOCKED"
         .to_string());
 }
 
-// Print specific error message and advice depending on the kind of MongoDB driver error received.
+// Print specific error message and advice depending on the kind of MongoDB driver error received
 //
 // Notes:
 // * The kind's type is: `std::sync::Arc<mongodb::error::ErrorKind> (as has now been dereferenced)
