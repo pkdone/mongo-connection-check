@@ -45,21 +45,46 @@ struct Stage {
 
 
 const STAGES: [Stage; TOTAL_STAGES] = [
-    Stage { index: STAGE0, name: "<setup>", desc: "<setup>" },
-    Stage { index: STAGE1, name: "URL-CHECK", 
-            desc: "Confirm URL contains seed list of target server(s) or service name" },
-    Stage { index: STAGE2, name: "MEMBERS-CHECK",
-            desc: "Determine list of individual servers (look up DNS SRV service if defined)" },
-    Stage { index: STAGE3, name: "DNS-IP-CHECK", 
-            desc: "Determine the IP addresses of each individual server, via DNS" },
-    Stage { index: STAGE4, name: "SOCKET-CHECK", 
-            desc: "Confirm TCP socket can be established to one or more target servers" },
-    Stage { index: STAGE5, name: "DRIVER-CHECK",
-            desc: "Confirm driver can validate the URL (including SRV resolution if required)" },
-    Stage { index: STAGE6, name: "DBPING-CHECK",
-            desc: "Confirm driver can connect to deployment using 'dbping'" },
-    Stage { index: STAGE7, name: "HEALTH-CHECK",
-            desc: "Retrieve running deployment's member composition including which is primary" },
+    Stage {
+        index: STAGE0,
+        name: "<setup>",
+        desc: "<setup>",
+    },
+    Stage {
+        index: STAGE1,
+        name: "URL-CHECK",
+        desc: "Confirm URL contains seed list of target server(s) or service name",
+    },
+    Stage {
+        index: STAGE2,
+        name: "MEMBERS-CHECK",
+        desc: "Determine list of individual servers (look up DNS SRV service if defined)",
+    },
+    Stage {
+        index: STAGE3,
+        name: "DNS-IP-CHECK",
+        desc: "Determine the IP addresses of each individual server, via DNS",
+    },
+    Stage {
+        index: STAGE4,
+        name: "SOCKET-CHECK",
+        desc: "Confirm TCP socket can be established to one or more target servers",
+    },
+    Stage {
+        index: STAGE5,
+        name: "DRIVER-CHECK",
+        desc: "Confirm driver can validate the URL (including SRV resolution if required)",
+    },
+    Stage {
+        index: STAGE6,
+        name: "DBPING-CHECK",
+        desc: "Confirm driver can connect to deployment using 'dbping'",
+    },
+    Stage {
+        index: STAGE7,
+        name: "HEALTH-CHECK",
+        desc: "Retrieve running deployment's member composition including which is primary",
+    },
 ];
 
 
@@ -155,14 +180,7 @@ fn main() {
     
     if url.is_empty() {
         println!("Empty URL parameter defined; terminating with error");
-        exit(1);        
-    }
-    
-    let url = args.value_of("url").expect("missing url - shouldn't happen as arg is mandatory");
-    
-    if url.is_empty() {
-        println!("Empty URL parameter defined; terminating with error");
-        exit(1);        
+        exit(1);
     }
     
     start(&url, args.value_of("username"), args.value_of("password"));
@@ -172,11 +190,11 @@ fn main() {
 // Core application async bootstrap starting point
 //
 fn start(url: &str, username: Option<&str>, password: Option<&str>) {
-    print_intro_with_stages();   
+    print_intro_with_stages();
     let mut stages_status = initialise_stages_status();
     println!("Specified deployment URL:");
     println!("  '{}'", url);
-    println!();        
+    println!();
     let mut rt = Runtime::new().unwrap();
     
     match rt.block_on(run_checks(&mut stages_status, url, username, password)) {
@@ -195,7 +213,8 @@ fn start(url: &str, username: Option<&str>, password: Option<&str>) {
 // Run each check serially
 //
 async fn run_checks(stages_status : &mut [StageStatus], url: &str, usr: Option<&str>,
-                    pwd: Option<&str>) -> Result<(), Box<dyn Error>> {
+                    pwd: Option<&str>)
+                    -> Result<(), Box<dyn Error>> {
     let dns_resolver =  TokioAsyncResolver::tokio_from_system_conf().await?;              
     // STAGE 1:
     let cluster_seed_list = stage1_url_check(STAGE1, stages_status, url)?;
@@ -257,7 +276,7 @@ fn stage1_url_check(stage_index: usize, stages_status : &mut [StageStatus], url:
                 get_displayable_addresses(&cluster_seed_list));
         }            
     } else {
-        print_address_list_members("Seed list server member", &cluster_seed_list);    
+        print_address_list_members("Seed list server member", &cluster_seed_list);
     }
        
     stages_status[stage_index].state = StageState::Passed;
@@ -344,10 +363,10 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
     let hostname_ipaddress_mappings_res = get_ipv4_addresses(dns_resolver, &cluster_address).await;
     
     let hostname_ipaddress_mappings = match hostname_ipaddress_mappings_res {
-        Ok(hostname_ipaddress_mappings) => {    
+        Ok(hostname_ipaddress_mappings) => {
             let mut found_at_least_one_ip_address = false;
         
-            for hostname_ipaddress_mapping in hostname_ipaddress_mappings.iter() {        
+            for hostname_ipaddress_mapping in hostname_ipaddress_mappings.iter() {
                 match hostname_ipaddress_mapping.ipaddress {
                     Some(ipaddress) => {
                         found_at_least_one_ip_address = true;
@@ -397,7 +416,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
     stages_status[stage_index].state = StageState::Failed;
     let mut futures = vec![];
 
-    for hostnm_ipaddr_map in hostname_ipaddr_maps {      
+    for hostnm_ipaddr_map in hostname_ipaddr_maps {
         let port = &hostnm_ipaddr_map.port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT);
         let ipaddress = match hostnm_ipaddr_map.ipaddress {
             Some(value) => value,
@@ -409,22 +428,21 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
             }
         };
 
-        let fut = task::spawn(async_try_open_client_tcp_connection(
+        let fut = task::spawn(concurrent_try_open_client_tcp_connection(
                     hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
         futures.push(fut);
     }   
 
-    let mut connect_success_count = 0;    
+    let mut connect_success_count = 0;
     let mut resume_os_advice_count_given = false;
     let joined_futures = join_all(futures).await;
     
-    // NOTE: For shared tiers can still open a socket even if whitelist in place            
+    // NOTE: For shared tiers can still open a socket even if whitelist in place
     for fut in joined_futures {
         let ip_check_result = fut?;
         
         connect_success_count += match ip_check_result.result {
             Ok(_) => {         
-                // &hostnm_ipaddr_map.hostname, port, ipaddress                       
                 println!("{}TCP socket connection successfully opened to server '{}:{}' (IP address\
                          : '{}')", INF_MSG_PREFIX, ip_check_result.hostname,
                          ip_check_result.port, ip_check_result.ipaddress);
@@ -432,7 +450,6 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
             }
             Err(e) => {
                 let err_msg = e.to_string();
-                // ipaddress, &hostnm_ipaddr_map.hostname, port
                 println!("{}Unable to open TCP socket connection to IP Address: '{}' (for server \
                     '{}:{}') - error message: {}", WRN_MSG_PREFIX, ip_check_result.ipaddress,
                     ip_check_result.hostname, ip_check_result.port, err_msg);
@@ -450,7 +467,6 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
                     resume_os_advice_count_given = true;
                 }
                 
-                // &hostnm_ipaddr_map.hostname, port
                 stages_status[stage_index].advice.push(format!("From this machine launch a \
                     terminal and use the netcat tool to see if a socket can be successfully opened \
                     to the server:port:  'nc -zv -w 5 {} {}'", 
@@ -462,7 +478,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
 
     if connect_success_count <= 0 {
         const MSG: &str = "Unable to open a TCP socket connection to any of the server addresses \
-            derived from the URL's seed list";    
+            derived from the URL's seed list";
         println!("{}{}", ERR_MSG_PREFIX, MSG);
         capture_no_connection_advice(&mut stages_status[stage_index]);
         return Err(MSG.into());
@@ -476,8 +492,8 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
 // Confirm driver can validate the URL (including SRV resolution if required
 //
 async fn stage5_driver_check(stage_index: usize, stages_status : &mut [StageStatus], url: &str,
-                       usr: Option<&str>, pwd: Option<&str>)
-                       -> Result<ClientOptions, MongoError> {
+                             usr: Option<&str>, pwd: Option<&str>)
+                             -> Result<ClientOptions, MongoError> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
 
@@ -515,7 +531,7 @@ async fn stage6_dbping_check(stage_index: usize, stages_status : &mut [StageStat
 
     match get_dbping_response(client_options).await {
         Ok(dbping_response) => {
-            let dbping_ok = match dbping_response.get("ok") {        
+            let dbping_ok = match dbping_response.get("ok") {
                 Some(dbping_val) => {
                     match dbping_val {
                         Bson::Int32(val) => {
@@ -540,12 +556,12 @@ async fn stage6_dbping_check(stage_index: usize, stages_status : &mut [StageStat
                     'dbping' command returning OK", INF_MSG_PREFIX);
             } else {
                 const MSG: &str = "The driver was able to establish an initial connection to the \
-                    deployment but the 'dbping' command failed";                
+                    deployment but the 'dbping' command failed";
                 println!("{}{}", ERR_MSG_PREFIX, MSG);
                 stages_status[stage_index].advice.push("Using the Mongo Shell, connect to the \
                     MongoDB deployment and run the 'db.runCommand({ping: 1})' command to check the \
                     health of the deployment and to see if any issues are reported".to_string());
-                return Err(MSG.into());                        
+                return Err(MSG.into());
             }
         }
         Err(e) => {
@@ -557,7 +573,7 @@ async fn stage6_dbping_check(stage_index: usize, stages_status : &mut [StageStat
                             e.to_string()),
             }
             
-            return Err(e);          
+            return Err(e);
         }
     };
 
@@ -588,13 +604,13 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
                 }            
             } 
             
-            if !is_identified && shared_tier {            
+            if !is_identified && shared_tier {
                 println!("{}MongoDB response indicates that the deployment is an Atlas shared tier \
                     (M0, M2 or M5) based on a shared replica set", INF_MSG_PREFIX);
                 is_identified = true;
             }            
 
-            if !is_identified {            
+            if !is_identified {
                 if let Ok(primary) = doc.get_str("primary") {
                     if let Ok(hosts) = doc.get_array("hosts") {
                         println!("{}Issued command 'ismaster' indicates that a replica set \
@@ -602,17 +618,16 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
 
                         for address_bson in hosts {
                             let host = address_bson.to_string().trim_matches('"').to_owned();
-                            let member_type = if host.eq(&primary) { "PRIMARY" } 
-                                              else { "SECONDARY" };
+                            let mmbr_type = if host.eq(&primary) { "PRIMARY" } else { "SECONDARY" };
                             println!("{}Issued command 'ismaster' lists one of the replica set \
-                                members as: '{}' ({})", INF_MSG_PREFIX, host, member_type);
+                                members as: '{}' ({})", INF_MSG_PREFIX, host, mmbr_type);
                             is_identified = true;
                         }
                     } 
                 }                 
             }
             
-            if !is_identified {            
+            if !is_identified {
                 if let Ok(ismaster) = doc.get_bool("ismaster") {
                     if ismaster {
                         println!("{}Issued command 'ismaster' indicates that a standalone mongod \
@@ -633,10 +648,10 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
     if !is_identified {
         const MSG: &str = "The driver returned an empty list of server members in response to \
             the 'ismaster' command and the deployment cannot correctly be identified as a \
-            standalone server, a replica set or a sharded deployment";                
+            standalone server, a replica set or a sharded deployment";
         println!("{}{}", ERR_MSG_PREFIX, MSG);
-        stages_status[stage_index].advice.push(ADVC.to_string());                     
-        return Err(MSG.into());                        
+        stages_status[stage_index].advice.push(ADVC.to_string());
+        return Err(MSG.into());
     }
     
     stages_status[stage_index].state = StageState::Passed;
@@ -646,14 +661,16 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
 
 // Return true if start of url indicate SRV service name specified
 //
-fn is_srv_url(url: &str) -> bool {
+fn is_srv_url(url: &str)
+              -> bool {
     url.starts_with(MONGO_SRV_PREFIX)
 }
 
 
 // Create a string representation of all the addreses, comma separated
 //
-fn get_displayable_addresses(addresses: &[StreamAddress]) -> String {
+fn get_displayable_addresses(addresses: &[StreamAddress])
+                             -> String {
     let address_str_list: Vec<String> = addresses.iter().map(|addr| get_displayable_address(addr))
         .collect(); 
     
@@ -663,25 +680,27 @@ fn get_displayable_addresses(addresses: &[StreamAddress]) -> String {
 
 // Concatenate hostname and port into string separated by ':'
 // 
-fn get_displayable_address(address: &StreamAddress) -> String {
+fn get_displayable_address(address: &StreamAddress)
+                           -> String {
     format!("{}:{}", address.hostname, address.port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT))
 }
 
 
 // Parse the URL extracting the seed list part (one or more server[:port] elements)
 // 
-fn extract_cluster_seedlist(url: &str) -> Result<Vec<StreamAddress>, Box<dyn Error>> {
+fn extract_cluster_seedlist(url: &str)
+                            -> Result<Vec<StreamAddress>, Box<dyn Error>> {
     let regex = Regex::new(r"^mongodb(?:\+srv)??://(?:.*@)?(?P<address>[^/&\?]+)")?;
     let err_msg = format!("Unable to find a seed list in the provided MongoDB URL: '{}'", url);
 
     let seedlist_option = match regex.captures(url) {
-        Some(captured) => captured.name("address").map(|m| m.as_str()),        
-        None => return Err(err_msg.into())
+        Some(captured) => captured.name("address").map(|m| m.as_str()),
+        None => return Err(err_msg.into()),
     };
 
     let seedlist = match seedlist_option {
         Some(text) => text,
-        None => return Err(err_msg.into())
+        None => return Err(err_msg.into()),
     };
 
     let cluster_seed_list: Result<Vec<_>, _> = seedlist.split(',')
@@ -697,7 +716,7 @@ async fn get_srv_host_addresses(dns_resolver: &AsyncDnsResolver,
                                 -> Result<Vec<StreamAddress>, Box<dyn Error>> {
     const MSG: &str = "No address found in URL ready for SRV DNS lookup";
     let address = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-        ErrorKind::InvalidInput, MSG)))?;    
+                  ErrorKind::InvalidInput, MSG)))?;    
     let srv_hostname_query = format!("{}{}.", MONGO_SRV_LOOKUP_PREFIX, address.hostname);
     let lookup_response = dns_resolver.srv_lookup(srv_hostname_query).await?;
 
@@ -708,7 +727,7 @@ async fn get_srv_host_addresses(dns_resolver: &AsyncDnsResolver,
             StreamAddress {hostname, port}
         }).collect();
     
-    Ok(srv_addresses)    
+    Ok(srv_addresses)
 }
 
 
@@ -718,9 +737,9 @@ async fn get_srv_txt_options(dns_resolver: &AsyncDnsResolver, cluster_seed_list:
                              -> Result<Vec<String>, Box<dyn Error>> {
     const MSG: &str = "No address found in URL ready for TXT DNS lookup";
     let address = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-        ErrorKind::InvalidInput, MSG)))?;    
-    let txt_hostname_query = format!("{}.", address.hostname);                
-    let lookup_response = dns_resolver.txt_lookup(txt_hostname_query).await?;    
+                  ErrorKind::InvalidInput, MSG)))?;
+    let txt_hostname_query = format!("{}.", address.hostname);
+    let lookup_response = dns_resolver.txt_lookup(txt_hostname_query).await?;
     let mut string_list = vec![];
 
     for txt_rr in lookup_response.iter() {
@@ -741,19 +760,22 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
     let mut first_err = None;
 
     for server_address in cluster_addresses {
-        let mut mapping = HostnameIP4AddressMap { hostname: server_address.hostname.to_string(),
-            ipaddress: None, port: server_address.port };
-        let hostname_ip_query = format!("{}.", server_address.hostname);                
+        let mut mapping = HostnameIP4AddressMap {
+            hostname: server_address.hostname.to_string(),
+            ipaddress: None,
+            port: server_address.port,
+        };
+        let hostname_ip_query = format!("{}.", server_address.hostname);
         let lookup_response_wrp = dns_resolver.lookup_ip(hostname_ip_query).await;
         
         match lookup_response_wrp {
-            Ok(lookup_response) => {                     
+            Ok(lookup_response) => {
                 for ipaddress in lookup_response.iter() {
                     if ipaddress.is_ipv4() {
                         mapping.ipaddress = Some(ipaddress);
                         break;
                     }
-                }                           
+                }
             }
             Err(e) => {
                 if first_err.is_none() {
@@ -762,15 +784,15 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
             }
         }
         
-        dns_mappings.push(mapping);       
+        dns_mappings.push(mapping);
     } 
     
     if dns_mappings.is_empty() {
         match first_err {
             Some(e) => Err(e),
-            None => Err("DNS IP Lookup Unknown Failure".into()),             
+            None => Err("DNS IP Lookup Unknown Failure".into()),
         }
-    } else {        
+    } else {
         Ok(dns_mappings)
     }
 }
@@ -778,8 +800,8 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
 
 // Attempt to open TCP connection to deployment returning OK if successful or throwing error it not
 //
-async fn async_try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr) 
-                                              -> IPCheckResult {
+async fn concurrent_try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr)
+                                                   -> IPCheckResult {
     let mut ip_check_result = IPCheckResult{ hostname, port, ipaddress, result: Ok(()) };
     let socket_addr = SocketAddr::new(ipaddress, port);
     
@@ -796,16 +818,16 @@ async fn async_try_open_client_tcp_connection(hostname: String, port: u16, ipadd
 // Invoke MongoDB Rust Driver client_options parser adding credentials if specified
 // 
 async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str>) 
-                            -> Result<ClientOptions, MongoError> {
+                                  -> Result<ClientOptions, MongoError> {
     let mut client_options = ClientOptions::parse(url).await?;
-    client_options.app_name = Some(APP_NAME.to_string());       
+    client_options.app_name = Some(APP_NAME.to_string());
     client_options.server_selection_timeout = Some(Duration::new(CONNECTION_TIMEOUT_SECS, 0));
     
     let mut credentials_modified = false;
     
     let mut cred = match client_options.credential {
         Some(ref credentials) => credentials.clone(),
-        None => Credential::builder().build()
+        None => Credential::builder().build(),
     };
     
     if let Some(username) = usr {
@@ -819,7 +841,7 @@ async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str
     }
     
     if credentials_modified {
-        client_options.credential = Some(cred);        
+        client_options.credential = Some(cred);
     }
     
     Ok(client_options)
@@ -828,10 +850,11 @@ async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str
 
 // Issue MongoDB Driver dbping command to deployment and return the command's result document
 //
-async fn get_dbping_response(client_options : &ClientOptions) -> Result<Document, Box<dyn Error>> {
+async fn get_dbping_response(client_options : &ClientOptions)
+                             -> Result<Document, Box<dyn Error>> {
     let client = Client::with_options(client_options.to_owned())?;
     let database = client.database("test");
-    Ok(database.run_command(doc! {"ping": 1}, None).await?)      
+    Ok(database.run_command(doc! {"ping": 1}, None).await?)
 }
 
 
@@ -871,7 +894,7 @@ fn alert_on_db_error_type(stg : &mut StageStatus, url: &str, err: &MongoError) {
     let kind = &err.kind;
     
     match &*kind.to_owned() {
-        MongoErrorKind::ServerSelectionError{ message, .. } => {              
+        MongoErrorKind::ServerSelectionError { message, .. } => {
             if message.contains("os error 104") {
                 println!("{}The driver was unable to establish a valid connection to the \
                     deployment, but given that a TCP connection was achieved in an earlier stage, \
@@ -891,19 +914,19 @@ fn alert_on_db_error_type(stg : &mut StageStatus, url: &str, err: &MongoError) {
                 println!("{}The driver was unable establish a valid connection to any server in \
                     the MongoDB deployment, so cannot perform a server selection.   Detail: {}", 
                     ERR_MSG_PREFIX, message);
-            }   
+            }
                                    
             capture_older_atlas_versions_advice_if_affected(stg, message);
 
             if message.contains("os error 104") || !is_srv_url(url) {
                 capture_some_optional_advice_if_affected(stg, url, message);
-                capture_no_connection_advice(stg);                
+                capture_no_connection_advice(stg);
             } else {
                 capture_no_connection_advice(stg);
                 capture_some_optional_advice_if_affected(stg, url, message);
             }
         }
-        MongoErrorKind::AuthenticationError{ message, .. } => {
+        MongoErrorKind::AuthenticationError { message, .. } => {
             println!("{}The driver was able to establish a TCP connection to at least one server \
                 in the MongoDB deployment, but failed to authenticate using the provided username/\
                 password/authSource.   Detail: {}", ERR_MSG_PREFIX, message);
@@ -917,7 +940,7 @@ fn alert_on_db_error_type(stg : &mut StageStatus, url: &str, err: &MongoError) {
                '&authSource=admin') and its value is correct for the configured target MongoDB \
                deployment".to_string());
         }
-        MongoErrorKind::ArgumentError{ message, .. } => {
+        MongoErrorKind::ArgumentError { message, .. } => {
             println!("{}The driver found problems in the URL string specified and therefore did \
                 not attempt to test TCP connectivity.   Detail: {}", ERR_MSG_PREFIX, message);
             stg.advice.push("Check the URL and ensure its parameters are well formed and MATCH THE \
@@ -939,14 +962,14 @@ fn alert_on_db_error_type(stg : &mut StageStatus, url: &str, err: &MongoError) {
 
 // Collect together advice depending on context (e.g what is in the url, or error code received)
 //
-fn capture_some_optional_advice_if_affected(stg : &mut StageStatus, url: &str, errmsg: &str) {
+fn capture_some_optional_advice_if_affected(stg: &mut StageStatus, url: &str, errmsg: &str) {
     if errmsg.contains("os error 104") {
         stg.advice.push("If the MongoDB deployment is an Atlas M0/M2/M5 tier cluster then via the \
             Atlas console, in the 'Network Access' section, for the 'IP Access List' tab select to \
             'ADD CURRENT IP ADDRESS' which should be the address of this host machine".to_string());
-    } else if errmsg.contains("unexpected end of file") && 
-              !url.contains("tls=true") &&
-              !url.contains("ssl=true") {
+    } else if errmsg.contains("unexpected end of file")
+        && !url.contains("tls=true")
+        && !url.contains("ssl=true") {
         stg.advice.push("The type of error received indicates that the MongoDB deployment may be \
             configured with TLS (aka SSL) which it should be, for security reasons. However, the \
             MongoDB URL you provided does not seem to indicate that the driver should communicate \
@@ -966,7 +989,7 @@ fn capture_some_optional_advice_if_affected(stg : &mut StageStatus, url: &str, e
 
 // Advise if deployment suspected of running older versions of MongoDB on Atlas with TLS/SSL issues
 //
-fn capture_older_atlas_versions_advice_if_affected(stg : &mut StageStatus, errmsg: &str) {
+fn capture_older_atlas_versions_advice_if_affected(stg: &mut StageStatus, errmsg: &str) {
     if errmsg.contains("tls handshake eof") {
         stg.advice.push("UNSUPPORTED by this utility - it appears that you are targetting a \
             MongoDB cluster deployed in Atlas, which is running a version of MongoDB lower than \
@@ -990,10 +1013,10 @@ fn print_address_list_members(prefix: &str, addresses: &[StreamAddress]) {
 
 
 // Print out the opening application output describing the stages that will be run
-// 
+//
 fn print_intro_with_stages() {
     println!();
-    println!();    
+    println!();
     println!("======= STARTED: {} =======", APP_NAME);
     println!();
     println!("CHECKS TO BE ATTEMPTED: ");
@@ -1010,7 +1033,7 @@ fn print_intro_with_stages() {
 
 // Print out the final summary of the result of each check + any resulting advice
 // 
-fn print_summary_with_stages(stages_status : &[StageStatus]) {
+fn print_summary_with_stages(stages_status: &[StageStatus]) {
     println!();
     println!();
     println!("-----------------------------------------------");
@@ -1030,13 +1053,13 @@ fn print_summary_with_stages(stages_status : &[StageStatus]) {
                 println!("RESULTING ADVICE: ");
             }
 
-            println!(" - {}  ({})", advice, STAGES[stage.index].name);            
+            println!(" - {}  ({})", advice, STAGES[stage.index].name);
             advice_header_shown = true;
         }
     }
     println!();
     println!("======= ENDED: {} ========", APP_NAME);
-    println!();    
+    println!();
     println!();
 }
 
@@ -1052,16 +1075,49 @@ fn print_stage_header(stage_index: usize) {
 
 // Initialise the stages check tracking structure to all be 'NotTested', initially
 // 
-fn initialise_stages_status() -> [StageStatus; TOTAL_STAGES] {
+fn initialise_stages_status()
+                            -> [StageStatus; TOTAL_STAGES] {
     [
-        StageStatus { index: STAGE0, state: StageState::NotApplicable, advice: vec![] },
-        StageStatus { index: STAGE1, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE2, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE3, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE4, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE5, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE6, state: StageState::NotTested, advice: vec![] },
-        StageStatus { index: STAGE7, state: StageState::NotTested, advice: vec![] },
+        StageStatus {
+            index: STAGE0,
+            state: StageState::NotApplicable,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE1,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE2,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE3,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE4,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE5,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE6,
+            state: StageState::NotTested,
+            advice: vec![],
+        },
+        StageStatus {
+            index: STAGE7, 
+            state: StageState::NotTested,
+            advice: vec![],
+        },
     ]
 }
 
@@ -1171,19 +1227,19 @@ mod tests {
                 assert_eq!(address_list.len(), hosts.len());
                 let mut pos = 0;
                 
-                for address in address_list {                           
-                    assert_eq!(address.hostname, hosts[pos]);    
+                for address in address_list {
+                    assert_eq!(address.hostname, hosts[pos]);
                     
                     if let Some(port) = address.port {
-                        assert_eq!(port, ports[pos]);      
+                        assert_eq!(port, ports[pos]);
                     }
                                         
                     pos += 1;
                 }
             }
-            Err(e) => {            
+            Err(e) => {
                 // True if there was no seedlist in the URL which caused the error
-                assert!((hosts.len() <= 0), e.to_string()) 
+                assert!((hosts.len() <= 0), e.to_string())
             }
         };
     }
