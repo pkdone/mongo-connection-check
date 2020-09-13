@@ -1,28 +1,23 @@
-use std::error::Error;
-use std::str;
-use std::io::{
-    Error as IOError, ErrorKind
-};
-use std::time::Duration;
-use std::process::exit;
-use std::convert::From;
-use std::net::{TcpStream, SocketAddr, IpAddr};
+use clap::{App, Arg};
 use futures::future::join_all;
-use tokio::{
-    task,
-    runtime::Runtime,
+use mongodb::{
+    bson::{Bson, doc, Document},
+    error::{Error as MongoError, ErrorKind as MongoErrorKind},
+    options::{ClientOptions, Credential, StreamAddress},
+    Client,
 };
 use regex::Regex;
+use std::convert::From;
+use std::error::Error;
+use std::io::{Error as IOError, ErrorKind};
+use std::net::{IpAddr, SocketAddr, TcpStream};
+use std::process::exit;
+use std::str;
+use std::time::Duration;
+use tokio::{runtime::Runtime, task};
 use trust_dns_resolver::{
-    AsyncResolver, TokioAsyncResolver, TokioConnection, TokioConnectionProvider,
-    error::ResolveError,
-};
-use clap::{App, Arg};
-use mongodb::{
-    Client,
-    bson::{Bson, doc, Document},
-    options::{ClientOptions, StreamAddress, Credential},
-    error::{Error as MongoError, ErrorKind as MongoErrorKind},
+    error::ResolveError, AsyncResolver, TokioAsyncResolver, TokioConnection,
+    TokioConnectionProvider,
 };
 
 mod stage;
@@ -116,7 +111,7 @@ fn main() {
 }
 
 
-// Core application async bootstrap starting point
+// Core application's async bootstrap starting point
 //
 fn start(url: &str, username: Option<&str>, password: Option<&str>) {
     print_intro_with_stages();
@@ -819,7 +814,7 @@ fn capture_no_connection_advice(stg : &mut StageStatus) {
 // * The kind's type is: `std::sync::Arc<mongodb::error::ErrorKind> (as has now been dereferenced)
 // * The kind's type with a * dereference is: `mongodb::error::ErrorKind`
 // * When kind is dereferenced it needs to be & borrowed again to allow match to access the struct
-fn alert_on_db_error_type(stg : &mut StageStatus, url: &str, err: &MongoError) {
+fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
     let kind = &err.kind;
     
     match &*kind.to_owned() {

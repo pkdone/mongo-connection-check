@@ -1,6 +1,3 @@
-use std::str;
-
-
 const STAGE0: usize = 0;
 pub const STAGE1: usize = 1;
 pub const STAGE2: usize = 2;
@@ -79,11 +76,11 @@ pub struct StageStatus {
 }
 
 
-// Initialise the stages check tracking structure to all be 'NotTested', initially
+// Initialise the structure for tracking stage checks to all be 'NotTested', initially
 // 
 impl StageStatus {
     pub fn new()
-           -> [StageStatus; TOTAL_STAGES] {
+               -> [StageStatus; TOTAL_STAGES] {
         [
             StageStatus {
                 index: STAGE0,
