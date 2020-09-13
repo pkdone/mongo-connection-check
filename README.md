@@ -114,6 +114,7 @@ cat src/main.rs | awk 'length($0) > 100'
 
 ## Potential Future Enhancements
 
+* __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool appearing to hang for around a minute at the affected different stages.
 * __Perform ICMP Ping Test__. Add to part of the stage4 socket check stage to perform an ICMP PING test (sometimes a ping may not get through the firewall but a socket will, or vice versa, so if a socket test fails then try a ping and if that succeeds, at least make that information available, as it will help with any subsequent connectivity diagnosis).
 * __Integration Tests__. Add integration tests to the project to reduce the risk of regressions.
 
