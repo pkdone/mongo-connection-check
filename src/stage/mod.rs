@@ -79,8 +79,8 @@ pub struct StageStatus {
 // Initialise the structure for tracking stage checks to all be 'NotTested', initially
 // 
 impl StageStatus {
-    pub fn new()
-               -> [StageStatus; TOTAL_STAGES] {
+    pub fn new_set()
+                   -> [StageStatus; TOTAL_STAGES] {
         [
             StageStatus {
                 index: STAGE0,

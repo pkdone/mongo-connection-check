@@ -115,7 +115,7 @@ fn main() {
 //
 fn start(url: &str, username: Option<&str>, password: Option<&str>) {
     print_intro_with_stages();
-    let mut stages_status = StageStatus::new();
+    let mut stages_status = StageStatus::new_set();
     println!("Specified deployment URL:");
     println!("  '{}'", url);
     println!();
@@ -139,7 +139,7 @@ fn start(url: &str, username: Option<&str>, password: Option<&str>) {
 async fn run_checks(stages_status : &mut [StageStatus], url: &str, usr: Option<&str>,
                     pwd: Option<&str>)
                     -> Result<(), Box<dyn Error>> {
-    let dns_resolver =  TokioAsyncResolver::tokio_from_system_conf().await?;              
+    let dns_resolver = TokioAsyncResolver::tokio_from_system_conf().await?;              
     // STAGE 1:
     let cluster_seed_list = stage1_url_check(STAGE1, stages_status, url)?;
     // STAGE 2:
@@ -219,10 +219,14 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
 
     let cluster_addresses =
         if is_srv_url(url) {
+            const MSG: &str = "No SRV address found in URL";        
+            let srv = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
+                ErrorKind::InvalidInput, MSG)))?;                              
+
             match get_srv_host_addresses(dns_resolver, &cluster_seed_list).await {
                 Ok(addresses) => {
-                    println!("{}Successfully located a DNS SRV service record for the cluster \
-                        address", INF_MSG_PREFIX);    
+                    println!("{}Successfully located a DNS SRV service record for: '{}{}'", 
+                        INF_MSG_PREFIX, MONGO_SRV_LOOKUP_PREFIX, srv.hostname);    
                     let txt_entries = get_srv_txt_options(dns_resolver, &cluster_seed_list).await?;
                     let mut has_txt_entry = false;
                     
@@ -241,17 +245,19 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
                     addresses
                 }
                 Err(e) => {
-                    println!("{}Unable to locate raw host addresses for SRV DNS service name '{}'\
-                        - error message: {}", ERR_MSG_PREFIX, 
-                        get_displayable_addresses(&cluster_seed_list), e.to_string());
-                    const MSG: &str = "No SRV address found in URL";
-                    let srv = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-                        ErrorKind::InvalidInput, MSG)))?;                              
+                    println!("{}Unable to determine the raw host addresses/ports because the SRV \
+                        DNS service record caannot be located for: '{}{}' - error message: {}",
+                        ERR_MSG_PREFIX, MONGO_SRV_LOOKUP_PREFIX, srv.hostname, e.to_string());
                     stages_status[stage_index].advice.push(format!("From this machine launch a \
                         terminal and use the nslookup tool to query DNS for the SRV service which \
                         is supposed to return the list of actual member server hostnames and ports \
                         (if it does not, then you have a DNS problem): \
-                        'nslookup -q=SRV _mongodb._tcp.{}'", srv.hostname));
+                        'nslookup -q=SRV {}{}'", MONGO_SRV_LOOKUP_PREFIX, srv.hostname));
+                    stages_status[stage_index].advice.push(format!("If this is an Atlas based \
+                        deployment, in the Atlas console, locate the cluster and press the \
+                        'Connect' button to see the connection details for the cluster - the SRV \
+                        name part of the URL it displays should match the following SRV name in \
+                        the URL you specified to this tool: '{}'", srv.hostname));
                     return Err(e);
                 }
             }
