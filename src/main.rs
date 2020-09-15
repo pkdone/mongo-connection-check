@@ -940,8 +940,8 @@ fn capture_older_atlas_versions_advice_if_affected(stg: &mut StageStatus, errmsg
 //
 fn print_slow_dns_warning_if_on_windows() {
     if cfg!(windows) {
-        println!("{}Slow DNS lookup about to occur on a Windows OS - please be patient (may take \
-            around 30-60 seconds to perform DNS check)", WRN_MSG_PREFIX);
+        println!("{}A slow DNS lookup might now occur (a behaviour on Windows OS only), please be \
+            patient if this is the case...", WRN_MSG_PREFIX);
     }
 }
 
