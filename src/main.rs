@@ -222,7 +222,8 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
             const MSG: &str = "No SRV address found in URL";        
             let srv = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
                 ErrorKind::InvalidInput, MSG)))?;                              
-
+            print_slow_dns_warning_if_on_windows();
+    
             match get_srv_host_addresses(dns_resolver, &cluster_seed_list).await {
                 Ok(addresses) => {
                     println!("{}Successfully located a DNS SRV service record for: '{}{}'", 
@@ -285,6 +286,7 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
                        -> Result<Vec::<HostnameIP4AddressMap>, Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
+    print_slow_dns_warning_if_on_windows();
     const MSG: &str = "Unable to find any IP address mapping in DNS for any of the members of the \
         deployment";
     const ADVC: &str = "From this machine launch a terminal and use the nslookup tool to query DNS \
@@ -328,7 +330,7 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
                     "Got no hostnames to lookup")))?;
                 stages_status[stage_index].advice.push(format!("{} {}'", ADVC, 
                     first_addr.hostname));
-                return Err(Box::new(e));        
+                return Err(e.into());
         }
     };
                     
@@ -738,7 +740,7 @@ async fn concurrent_try_open_client_tcp_connection(hostname: String, port: u16, 
     match TcpStream::connect_timeout(&socket_addr, Duration::new(CONNECTION_TIMEOUT_SECS, 0)) {
         Ok(_) => ip_check_result,
         Err(e) => {
-            ip_check_result.result = Err(Box::new(e));
+            ip_check_result.result = Err(e.into());
             ip_check_result
         }
     }
@@ -749,6 +751,10 @@ async fn concurrent_try_open_client_tcp_connection(hostname: String, port: u16, 
 // 
 async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str>) 
                                   -> Result<ClientOptions, MongoError> {
+    if is_srv_url(url) {
+        print_slow_dns_warning_if_on_windows();
+    }
+    
     let mut client_options = ClientOptions::parse(url).await?;
     client_options.app_name = Some(APP_NAME.to_string());
     client_options.server_selection_timeout = Some(Duration::new(CONNECTION_TIMEOUT_SECS, 0));
@@ -926,6 +932,16 @@ fn capture_older_atlas_versions_advice_if_affected(stg: &mut StageStatus, errmsg
             4.2 (e.g. version 3.6 or 4.0). Unfortunately, due to older TLS/SSL libraries used on \
             the hosts' OS for those MongoDB versions, in Atlas, the Rust driver, used by this \
             connection test utility, will be unable to connect to the database".to_string());
+    }
+}
+
+
+// Warn that tool may appear to hang for a while due to a trust_dns issue on Windows
+//
+fn print_slow_dns_warning_if_on_windows() {
+    if cfg!(windows) {
+        println!("{}Slow DNS lookup about to occur on a Windows OS - please be patient (may take \
+            around 30-60 seconds to perform DNS check)", WRN_MSG_PREFIX);
     }
 }
 
