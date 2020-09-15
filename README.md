@@ -12,7 +12,7 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check-windows-x86_64-081.exe)
  * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/0.8.1/mongo-connection-check-macos-x86_64-081)
 
-_NOTE:_ __Rename__ the file once download, removing the last part of the name, to just be named __mongo-connection-check__ (or __mongo-connection-check.exe__ on Windows)
+_NOTE:_ __Rename__ the file once download, removing the last part of the name, to just be called __mongo-connection-check__ (or __mongo-connection-check.exe__ on Windows)
 
 These downloads are for the latest version of _mongo-connection-check_ (version __0.8.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
@@ -32,7 +32,7 @@ __Open a terminal/prompt/shell and run the following__ _(in this example, to con
 
 &nbsp;&nbsp;__NOTE__: 
  * On __Windows__, first replace the text `./mongo-connection-check` with `mongo-connection-check.exe` in the command line shown above; you will also be prompted with some security dialog boxes to approve the safety of the executable
- * On __Mac OS X__, you will receive a prompt saying "Cannot be opened because the developer cannot be verified", therefore, if you trust this binary, you will then need to view the _Security & Privacy_ settings for the downloaded file and press the __Allow Anyway__ button, as shown below, before trying to run the command again:
+ * On __Mac OS X__, you will receive a prompt saying __"Cannot be opened because the developer cannot be verified"__, therefore, if you trust this binary, you will then need to view the __Security & Privacy__ settings for the downloaded file and press the __Allow Anyway__ button, as shown below, before trying to run the command again:
  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src=".mac_allow_access.png" width="370" height="317" alt="Screenshot of Allow Anyway option in Mac OS X"/>
 
@@ -85,7 +85,7 @@ Any MongoDB deployments of MongoDB versions 3.6+, if self managed, and MongoDB v
 
 _(ensure you've cloned/copied this GitHub project first to your local machine)_
 
- 1. Install the latest version of the [Rust development environment](https://www.rust-lang.org/tools/install), if it isn't already installed, via the __rustup__ utility, including the _rustc_ compiler & the _cargo_ package/build manager. _NOTE:_ If building on Windows 10, first ensure you have Microsoft's [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) installed (specifically when running that installer choose the _C++ build tools_ option)
+ 1. Install the latest version of the [Rust development environment](https://www.rust-lang.org/tools/install), if it isn't already installed, via the __rustup__ utility, including the _rustc_ compiler & the _cargo_ package/build manager. _NOTE:_ If building on Windows 10, first ensure you have Microsoft's [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) installed (and importantly, when running Micosrosoft's _build tools_ installer, choose the _C++ build tools_ option)
 
  2. From a terminal/prompt/shell, from this project's root folder, run Rust's _cargo_ command to build the project and run the debug version of the tool executable, as shown in the example below (change the URL to match the specific MongoDB database deployment target you want to test):
  
@@ -116,7 +116,7 @@ cat src/main.rs | awk 'length($0) > 100'
 
 ## Potential Future Enhancements
 
-* __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool appearing to hang for around a minute at the affected different stages.
+* __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool appearing to hang for a period at the affected different stages.
 * __Perform ICMP Ping Test__. Add to part of the stage4 socket check stage to perform an ICMP PING test (sometimes a ping may not get through the firewall but a socket will, or vice versa, so if a socket test fails then try a ping and if that succeeds, at least make that information available, as it will help with any subsequent connectivity diagnosis).
 * __Integration Tests__. Add integration tests to the project to reduce the risk of regressions.
 
