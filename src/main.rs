@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use futures::future::join_all;
 use mongodb::{
-    bson::{Bson, doc, Document},
+    bson::{doc, Bson, Document},
     error::{Error as MongoError, ErrorKind as MongoErrorKind},
     options::{ClientOptions, Credential, StreamAddress},
     Client,
@@ -128,6 +128,9 @@ fn start(url: &str, username: Option<&str>, password: Option<&str>) {
         Err(e) => {
             println!(" UNDERLYING ERROR: {}", e.to_string());
             print_summary_with_stages(&stages_status);
+            #[cfg(test)]
+            panic!("Received error whilst testing: {:?}", e);
+            #[cfg(not(test))]
             exit(1);
         }
     }
@@ -837,7 +840,7 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
                     this may indicate that the deployment is an Atlas shared tier (M0, M2 or M5) \
                     based on a shared replica set, but currently with no matching IP Access List \
                     entry defined to enable access from this machine.   Detail: {}",
-                    ERR_MSG_PREFIX, message);                     
+                    ERR_MSG_PREFIX, message);
             } else if message.contains("unexpected end of file") {
                 println!("{}The driver was unable to establish a valid connection to the \
                     deployment, but given that a TCP connection was achieved in an earlier stage, \
@@ -1022,9 +1025,14 @@ fn print_stage_header(stage_index: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
+
+
+    const PASSWD_ENV_VAR: &str = "TEST_PASSWD";
+
 
     #[test]
-    fn test_is_srv() {
+    fn unit_test_is_srv() {
         assert!(!is_srv_url("mongodb://abc123.mongodb.net/test"));
         assert!(is_srv_url("mongodb+srv://seb360.o5qhl.gcp.mongodb.net/test"));
         assert!(!is_srv_url("mongodb+srv:seb360.o5qhl.gcp.mongodb.net/test"));
@@ -1032,7 +1040,7 @@ mod tests {
 
 
     #[test]
-    fn test_addresses_display() {
+    fn unit_test_addresses_display() {
         let mut address_list = vec![];
         address_list.push(StreamAddress::parse("abc123.mongodb.com:27017").unwrap());
         address_list.push(StreamAddress::parse("xyz789.mongodb.com:27017").unwrap());
@@ -1051,7 +1059,7 @@ mod tests {
 
 
     #[test]
-    fn test_extract_cluster_seedlist() {
+    fn unit_test_extract_cluster_seedlist() {
         assert_extract_cluster_seedlist("mongodb:abc123.mongodb.net:27017/test", &[], &[]);
         assert_extract_cluster_seedlist("mongodb//abc123.mongodb.net:27017/test", &[], &[]);
         assert_extract_cluster_seedlist("mongodb://abc123.mongodb.net:27017/test",
@@ -1118,6 +1126,97 @@ mod tests {
     } 
 
 
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_shared_tier_srv() {
+        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
+        let url = format!("mongodb+srv://main_user:{}@devtuesreportcluster.s703u.mongodb.net/test",
+            get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_shared_tier_list() {
+        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
+        let url = format!("mongodb://main_user:{}@devtuesreportcluster-shard-00-02.s703u.mongodb.ne\
+            t:27017,devtuesreportcluster-shard-00-01.s703u.mongodb.net:27017,devtuesreportcluster-s\
+            hard-00-00.s703u.mongodb.net:27017/7?tls=true&authSource=admin",
+            get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_repset_srv() {
+        // Expects Atlas M10+ replica set called 'testcluster'
+        let url = format!("mongodb+srv://main_user:{}@testcluster.s703u.mongodb.net/test?retryWrite\
+            s=true&w=majority", get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_repset_only_one_valid_host() {
+        // Expects Atlas M10+ replica set called 'testcluster'
+        let url = format!("mongodb://main_user:{}@testcluster-BAD-shard-00-00.s703u.mongodb.net:270\
+            17,testcluster-BAD-shard-00-01.s703u.mongodb.net:27017,testcluster-shard-00-02.s703u.mo\
+            ngodb.net:27017/?tls=true", get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_sharded_srv() {
+        // Expects Atlas M30+ sharded cluster called 'testcluster2'
+        let url = format!("mongodb+srv://main_user:{}@testcluster2.s703u.mongodb.net/test?retryWrit\
+            es=true&w=majority", get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_real_atlas_sharded_only_one_valid_host() {
+        // Expects Atlas M30+ sharded cluster called 'testcluster2'
+        let url = format!("mongodb://main_user:{}@testcluster2-shard-01-01.s703u.mongodb.net:27016/\
+            ?tls=true", get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    fn integration_test_localhost_no_auth() {
+        // Expects mongod listening on localhost with no authentication
+        let url = format!("mongodb://localhost");
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    #[should_panic(expected = "unexpected end of file")]
+    fn integration_test_real_atlas_sharded_missing_tls() {
+        // Expects Atlas M30+ sharded cluster called 'testcluster2'
+        let url = format!("mongodb://main_user:{}@testcluster2-shard-01-01.s703u.mongodb.net:27016/"
+            , get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
+    #[test]
+    #[ignore]
+    #[should_panic(expected = "SCRAM failure: bad auth Authentication failed")]
+    fn integration_test_real_atlas_cluster_bad_passwd() {
+        start("mongodb+srv://main_user:badpswd{}@devtuesreportcluster.s703u.mongodb.net/test",
+            None, None);
+    }
+
+    #[test]
+    #[ignore]
+    #[should_panic(expected = "NoRecordsFound")]
+    fn integration_test_bad_srv() {
+        start("mongodb+srv://usr:passwd@missingcluster.noproj.mongodb.net/test", None, None);
+    }
+
+
     fn assert_extract_cluster_seedlist(url: &str, hosts: &[&str], ports: &[u16]) {
         match extract_cluster_seedlist(url) {
             Ok(address_list) => {
@@ -1140,5 +1239,25 @@ mod tests {
             }
         };
     }
+    
+
+    fn get_test_password_panicking_if_missing() 
+                                              -> String {
+        let err_msg = format!("Error retrieving value from OS environment variable '{}' which is \
+                intended for use as the password in a test, to connect to a MongoDB cluster - \
+                ensure this environment variable is defined, for example: \n\n\
+                $ export {}=\"mypassword1\"\n\n", PASSWD_ENV_VAR, PASSWD_ENV_VAR);
+        
+        match env::var(PASSWD_ENV_VAR) {
+            Ok(passwd) => {
+                if passwd.is_empty() {
+                    panic!(err_msg);
+                } else {
+                    passwd
+                }
+            }
+            Err(_) => panic!(err_msg),
+        }
+    }    
 }
 

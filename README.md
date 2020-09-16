@@ -104,6 +104,11 @@ cargo build --release
 cargo test
 ```
  
+ * _OPTIONAL_: Run the project's _integrations tests_ (note, requires specific MongoDB deployments to already be running, not documented here; requires changing the target cluster password shown below from 'mypasswd' to the real password):
+```console
+TEST_PASSWD="mypasswd" cargo test -- --ignored  --show-output
+```
+ 
  * _OPTIONAL_: Run the project's _lint_ checks (to catch common mistakes and suggest where code can be improved):
 ```console
 cargo clippy
@@ -118,5 +123,4 @@ cat src/main.rs | awk 'length($0) > 100'
 
 * __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool sometimes appearing to hang for a period at the affected different stages.
 * __Perform ICMP Ping Test__. Add to part of the stage4 socket check stage to perform an ICMP PING test (sometimes a ping may not get through the firewall but a socket will, or vice versa, so if a socket test fails then try a ping and if that succeeds, at least make that information available, as it will help with any subsequent connectivity diagnosis).
-* __Integration Tests__. Add integration tests to the project to reduce the risk of regressions.
 
