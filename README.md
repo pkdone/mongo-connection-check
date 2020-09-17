@@ -104,7 +104,7 @@ cargo build --release
 cargo test
 ```
  
- * _OPTIONAL_: Run the project's _integrations tests_ (note, requires specific MongoDB deployments to already be running, not documented here; requires changing the target cluster password shown below from 'mypasswd' to the real password):
+ * _OPTIONAL_: Run the project's _integrations tests_ (note, requires specific MongoDB deployments to already be running, which are not documented here; also requires changing the target cluster password shown below from 'mypasswd' to the real password):
 ```console
 TEST_PASSWD="mypasswd" cargo test -- --ignored  --show-output
 ```

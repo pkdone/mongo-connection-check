@@ -42,9 +42,9 @@ struct IPCheckResult {
 }
 
 
-const APP_NAME: &str = "mongo-connection-check";
-const APP_TITLE: &str = "MongoDB Connection Check";
-const APP_VERSION: &str = "0.8.5";
+const APP_NAME: &str = env!("CARGO_PKG_NAME");
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+const APP_TITLE: &str = env!("CARGO_PKG_DESCRIPTION");
 const MONGO_SRV_PREFIX: &str = "mongodb+srv://";
 const MONGO_SRV_LOOKUP_PREFIX: &str = "_mongodb._tcp.";
 const CONNECTION_TIMEOUT_SECS: u64 = 3;
@@ -63,9 +63,9 @@ fn main() {
     let args = App::new(APP_TITLE)
         .version(APP_VERSION)
         .before_help("")
-        .about("\nChecks the connectivity from your machine to a remote MongoDB deployment \n\
-            If a connection can't be made, outputs advice on how to diagnose and potentially fix \n\
-            The MongoDB deployment may be hosted in Atlas or may be self-managed on-prem/in-cloud")
+        .about("\nChecks the connectivity from your machine to a remote MongoDB deployment.\n\
+            If a connection can't be made, outputs advice on how to diagnose and potentially fix.\n\
+            The MongoDB deployment may be hosted in Atlas or may be self-managed on-prem/in-cloud.")
         .arg(Arg::with_name("username")
             .short("u")
             .long("username")

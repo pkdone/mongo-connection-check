@@ -238,15 +238,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "domain"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cc2157cca35ae62d3d6281d876cc1b3f0f71a3409fe4b7c8d8790b441e9bc2b"
-dependencies = [
- "rand",
-]
-
-[[package]]
 name = "dtoa"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -822,12 +813,10 @@ dependencies = [
 
 [[package]]
 name = "mongo-connection-check"
-version = "0.8.5"
+version = "1.0.2"
 dependencies = [
  "clap",
- "domain",
  "futures",
- "lazy_static",
  "mongodb",
  "regex",
  "tokio",
