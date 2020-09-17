@@ -76,7 +76,7 @@ pub struct StageStatus {
 }
 
 
-// Initialise the structure for tracking stage checks to all be 'NotTested', initially
+// Initialise the list of stage structures for tracking stage checks to all be 'NotTested'
 // 
 impl StageStatus {
     pub fn new_set()
