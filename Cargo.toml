@@ -2,12 +2,12 @@
 name = "mongo-connection-check"
 version = "1.0.2"
 description = "MongoDB Connection Check"
-authors = ["Paul Done <pkdone@gmail.com>"]
+authors = ["Paul Done"]
 edition = "2018"
 
 [dependencies]
-futures = { version = "0.3.*"}
-tokio = {version = "0.2.*", features = ["full"] }
+futures = {version = "0.3.*"}
+tokio = {version = "0.2.*", features = ["full"]}
 regex = "1.3.*"
 trust-dns-resolver = "0.19.*"
 clap = "2.33.*"
