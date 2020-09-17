@@ -607,8 +607,7 @@ fn is_srv_url(url: &str)
 fn get_displayable_addresses(addresses: &[StreamAddress])
                              -> String {
     let address_str_list: Vec<String> = addresses.iter().map(|addr| get_displayable_address(addr))
-        .collect(); 
-    
+        .collect();
     address_str_list.join(",")
 }
 
@@ -1217,6 +1216,8 @@ mod tests {
     }
 
 
+    // Used from unit tests to assert address is a seed list
+    //
     fn assert_extract_cluster_seedlist(url: &str, hosts: &[&str], ports: &[u16]) {
         match extract_cluster_seedlist(url) {
             Ok(address_list) => {
@@ -1241,6 +1242,8 @@ mod tests {
     }
     
 
+    // Used from integration tests to get value of password environment variable
+    //
     fn get_test_password_panicking_if_missing() 
                                               -> String {
         let err_msg = format!("Error retrieving value from OS environment variable '{}' which is \
