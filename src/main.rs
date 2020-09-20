@@ -1204,7 +1204,7 @@ mod tests {
     #[should_panic(expected = "SCRAM failure: bad auth Authentication failed")]
     fn integration_test_real_atlas_cluster_bad_passwd() {
         // Expects Atlas M10+ replica set called 'testcluster'
-        start("mongodb+srv://main_user:badpswd{}@devtuesreportcluster.s703u.mongodb.net/test",
+        start("mongodb+srv://main_user:badpswd@devtuesreportcluster.s703u.mongodb.net/test",
             None, None);
     }
 

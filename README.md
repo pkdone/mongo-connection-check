@@ -47,19 +47,19 @@ To see the full __help__ information for this tool, include a `-h` parameter:
 __Example__ command line for attempting to connect to a remote MongoDB __Atlas__ deployment, using an example __SRV service name__ with a username & password embedded in the MongoDB URL:
 
 ```console
-./mongo-connection-check "mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/?retryWrites=true"
+./mongo-connection-check 'mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/?retryWrites=true'
 ```
 
 __Example__ command line for attempting to connect to a remote MongoDB __Atlas__ deployment, using an example SRV service name with the __username & password provided as parameters__ separate from the MongoDB URL:
 
 ```console
-./mongo-connection-check -u myusr -p pswd "mongodb+srv://ctr.a1b2s.mongodb.net/?retryWrites=true"
+./mongo-connection-check -u myusr -p pswd 'mongodb+srv://ctr.a1b2s.mongodb.net/?retryWrites=true'
 ```
 
 __Example__ command line for attempting to connect to a remote __self-managed MongoDB cluster deployment__, using an example __seed list__ of individual server hostnames & ports in the MongoDB URL, with TLS enabled (username and password not specified in this example):
 
 ```console
-./mongo-connection-check "mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/test?tls=true"
+./mongo-connection-check 'mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/test?tls=true'
 ```
 
 ## Checks Performed
@@ -91,7 +91,7 @@ _(ensure you've cloned/copied this GitHub project first to your local machine)_
  
 ```console
 cargo build
-cargo run -- "mongodb+srv://myusr:pswd@mycluster.a113z.mongodb.net"
+cargo run -- 'mongodb+srv://myusr:pswd@mycluster.a113z.mongodb.net'
 ```
 
  * _OPTIONAL_: Build a _production release_ version of the project's executable:
