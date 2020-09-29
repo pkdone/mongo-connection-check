@@ -14,7 +14,7 @@ use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::process::exit;
 use std::str;
 use std::time::Duration;
-use tokio::{runtime::Runtime, task};
+use tokio::task;
 use trust_dns_resolver::{
     error::ResolveError, AsyncResolver, TokioAsyncResolver, TokioConnection,
     TokioConnectionProvider,
@@ -113,15 +113,15 @@ fn main() {
 
 // Core application's async bootstrap starting point
 //
-fn start(url: &str, username: Option<&str>, password: Option<&str>) {
+#[tokio::main]
+async fn start(url: &str, username: Option<&str>, password: Option<&str>) {
     print_intro_with_stages();
     let mut stages_status = StageStatus::new_set();
     println!("Specified deployment URL:");
     println!("  '{}'", url);
     println!();
-    let mut rt = Runtime::new().unwrap();
 
-    match rt.block_on(run_checks(&mut stages_status, url, username, password)) {
+    match run_checks(&mut stages_status, url, username, password).await {
         Ok(_) => {
             print_summary_with_stages(&stages_status);
         }
@@ -135,6 +135,7 @@ fn start(url: &str, username: Option<&str>, password: Option<&str>) {
         }
     }
 }
+
 
 
 // Run each check serially
@@ -363,7 +364,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
         };
 
         let fut = task::spawn(concurrent_try_open_client_tcp_connection(
-                      hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
+                    hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
         futures.push(fut);
     }
 
@@ -399,7 +400,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
                         Atlas console to see when the cluster is fully resumed/running, and then \
                         just try this connection check again)".to_string());
                     resume_os_advice_count_given = true;
-                }
+                }   
 
                 stages_status[stage_index].advice.push(format!("From this machine launch a \
                     terminal and use the netcat tool to see if a socket can be successfully opened \
