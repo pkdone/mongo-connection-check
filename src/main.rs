@@ -9,7 +9,6 @@ use mongodb::{
 use regex::Regex;
 use std::convert::From;
 use std::error::Error;
-use std::io::{Error as IOError, ErrorKind};
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::process::exit;
 use std::str;
@@ -223,9 +222,7 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
 
     let cluster_addresses =
         if is_srv_url(url) {
-            const MSG: &str = "No SRV address found in URL";
-            let srv = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-                ErrorKind::InvalidInput, MSG)))?;
+            let srv = &cluster_seed_list[0];
             print_slow_dns_warning_if_on_windows();
 
             match get_srv_host_addresses(dns_resolver, &cluster_seed_list).await {
@@ -328,9 +325,7 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
         Err(e) => {
                 println!("{}{} '{}' - error message: {}", ERR_MSG_PREFIX, MSG,
                     get_displayable_addresses(cluster_address), e.to_string());
-                let first_addr = cluster_address.first()
-                    .ok_or_else(|| Box::new(IOError::new(ErrorKind::InvalidInput,
-                    "Got no hostnames to lookup")))?;
+                let first_addr = &cluster_address[0];
                 stages_status[stage_index].advice.push(format!("{} {}'", ADVC,
                     first_addr.hostname));
                 return Err(e.into());
@@ -648,9 +643,7 @@ fn extract_cluster_seedlist(url: &str)
 async fn get_srv_host_addresses(dns_resolver: &AsyncDnsResolver,
                                 cluster_seed_list: &[StreamAddress])
                                 -> Result<Vec<StreamAddress>, Box<dyn Error>> {
-    const MSG: &str = "No address found in URL ready for SRV DNS lookup";
-    let address = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-                  ErrorKind::InvalidInput, MSG)))?;
+    let address = &cluster_seed_list[0];
     let srv_hostname_query = format!("{}{}.", MONGO_SRV_LOOKUP_PREFIX, address.hostname);
     let lookup_response = dns_resolver.srv_lookup(srv_hostname_query).await?;
 
@@ -669,9 +662,7 @@ async fn get_srv_host_addresses(dns_resolver: &AsyncDnsResolver,
 //
 async fn get_srv_txt_options(dns_resolver: &AsyncDnsResolver, cluster_seed_list: &[StreamAddress])
                              -> Result<Vec<String>, Box<dyn Error>> {
-    const MSG: &str = "No address found in URL ready for TXT DNS lookup";
-    let address = cluster_seed_list.first().ok_or_else(|| Box::new(IOError::new(
-                  ErrorKind::InvalidInput, MSG)))?;
+    let address = &cluster_seed_list[0];
     let txt_hostname_query = format!("{}.", address.hostname);
     let lookup_response = dns_resolver.txt_lookup(txt_hostname_query).await?;
     let mut string_list = vec![];
