@@ -813,7 +813,7 @@ dependencies = [
 
 [[package]]
 name = "mongo-connection-check"
-version = "1.0.2"
+version = "1.1.0"
 dependencies = [
  "clap",
  "futures",

@@ -9,6 +9,7 @@ pub const STAGE7: usize = 7;
 const TOTAL_STAGES: usize = STAGE7 + 1;
 
 
+// Tracks stage name & description
 pub struct Stage {
     pub index: usize,
     pub name: &'static str,
@@ -16,6 +17,7 @@ pub struct Stage {
 }
 
 
+// Used to track progress of each test stage
 pub const STAGES: [Stage; TOTAL_STAGES] = [
     Stage {
         index: STAGE0,
@@ -40,7 +42,7 @@ pub const STAGES: [Stage; TOTAL_STAGES] = [
     Stage {
         index: STAGE4,
         name: "SOCKET-CHECK",
-        desc: "Confirm TCP socket can be established to one or more target servers",
+        desc: "Confirm a socket can be established to one or more target servers",
     },
     Stage {
         index: STAGE5,
@@ -55,11 +57,13 @@ pub const STAGES: [Stage; TOTAL_STAGES] = [
     Stage {
         index: STAGE7,
         name: "HEALTH-CHECK",
-        desc: "Retrieve running deployment's member composition including which is primary",
+        desc: "Retrieve running cluster's deployment type & statys",
     },
 ];
 
 
+
+// Success type for a stage
 #[derive(Debug)]
 pub enum StageState {
     NotApplicable,
@@ -69,6 +73,7 @@ pub enum StageState {
 }
 
 
+// Track whether stage worked and what advice given for it, if anything
 pub struct StageStatus {
     pub index: usize,
     pub state: StageState,

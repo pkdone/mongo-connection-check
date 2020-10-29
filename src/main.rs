@@ -20,12 +20,16 @@ use trust_dns_resolver::{
 };
 
 mod stage;
-pub use crate::{
+use crate::{
     stage::StageState, stage::StageStatus, stage::STAGE1, stage::STAGE2, stage::STAGE3,
     stage::STAGE4, stage::STAGE5, stage::STAGE6, stage::STAGE7, stage::STAGES,
 };
 
+mod osping;
+use crate::osping::{ping, PingResult};
 
+
+// Link hostname, port and IP address together
 struct HostnameIP4AddressMap {
     hostname: String,
     port: Option<u16>,
@@ -33,7 +37,8 @@ struct HostnameIP4AddressMap {
 }
 
 
-struct IPCheckResult {
+// Stores the result of a TCP connection attempt to host
+struct TCPCheckResult {
     hostname: String,
     port: u16,
     ipaddress: IpAddr,
@@ -134,7 +139,6 @@ async fn start(url: &str, username: Option<&str>, password: Option<&str>) {
         }
     }
 }
-
 
 
 // Run each check serially
@@ -376,6 +380,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
                 println!("{}TCP socket connection successfully opened to server '{}:{}' (IP address\
                          : '{}')", INF_MSG_PREFIX, ip_check_result.hostname,
                          ip_check_result.port, ip_check_result.ipaddress);
+                check_icmp_ping_connection(&ip_check_result.hostname, true);
                 1
             }
             Err(e) => {
@@ -395,12 +400,13 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
                         Atlas console to see when the cluster is fully resumed/running, and then \
                         just try this connection check again)".to_string());
                     resume_os_advice_count_given = true;
-                }   
+                }
 
                 stages_status[stage_index].advice.push(format!("From this machine launch a \
                     terminal and use the netcat tool to see if a socket can be successfully opened \
                     to the server:port:  'nc -zv -w 5 {} {}'",
                     ip_check_result.hostname, ip_check_result.port));
+                check_icmp_ping_connection(&ip_check_result.hostname, false);
                 0
             }
         }
@@ -726,8 +732,8 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
 // Attempt to open TCP connection to deployment returning OK if successful or throwing error it not
 //
 async fn concurrent_try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr)
-                                                   -> IPCheckResult {
-    let mut ip_check_result = IPCheckResult{ hostname, port, ipaddress, result: Ok(()) };
+                                                   -> TCPCheckResult {
+    let mut ip_check_result = TCPCheckResult{ hostname, port, ipaddress, result: Ok(()) };
     let socket_addr = SocketAddr::new(ipaddress, port);
 
     match TcpStream::connect_timeout(&socket_addr, Duration::new(CONNECTION_TIMEOUT_SECS, 0)) {
@@ -794,6 +800,46 @@ async fn get_dbismaster_response(client_options : &ClientOptions)
     let client = Client::with_options(client_options.to_owned())?;
     let database = client.database("test");
     Ok(database.run_command(doc! {"isMaster": 1}, None).await?)
+}
+
+
+// Checks if an ICMP Ping can be successfully made to a host server
+//
+fn check_icmp_ping_connection(hostname :&str, tcp_connected_succesfully: bool) {
+    match ping(hostname) {
+        PingResult::ConnectionSuccess => {
+            if tcp_connected_succesfully {
+                println!("{}ICMP ping successfully achieved to host '{}'", INF_MSG_PREFIX,
+                hostname);
+            } else {
+                println!("{}Despite a TCP connection to the host failing, an ICMP ping was \
+                successfully achieved to host '{}' which implies that the host server is up and \
+                running but either: 1) TCP connections to a specific port are blocked by a \
+                firewall (or lack of valid Atlas access list entry), or 2) the mongod process is \
+                not running and listening on the specific port", INF_MSG_PREFIX, hostname);
+            }
+        }
+        PingResult::ConnectionFailure(message) | PingResult::DNSIssue(message) => {
+            if tcp_connected_succesfully {
+                println!("{}ICMP ping to host '{}' not achieved, but because a TCP connection to \
+                the host was successful, this is probably just because ICMP pings are blocked by \
+                the server - error message: {}", INF_MSG_PREFIX, hostname, message);
+            } else {
+                println!("{}ICMP ping to host '{}' not achieved - error message: {}",
+                WRN_MSG_PREFIX, hostname, message);
+            }
+        }
+        PingResult::OSCmndIssue(message) => {
+            if tcp_connected_succesfully {
+                println!("{}Unable to run the OS ping executable on this machine to test an ICMP \
+                ping to the host '{}', however, because a TCP connection to the host was successful\
+                , this is not an issue - error message: {}", INF_MSG_PREFIX, hostname, message);
+            } else {
+                println!("{}Unable to run the OS ping executable on this machine to test an ICMP \
+                ping to the host '{}' - error message: {}", WRN_MSG_PREFIX, hostname, message);
+            }
+        }
+    }
 }
 
 
@@ -1193,7 +1239,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    #[should_panic(expected = "SCRAM failure: bad auth Authentication failed")]
+    #[should_panic(expected = "SCRAM failure: bad auth")]
     fn integration_test_real_atlas_cluster_bad_passwd() {
         // Expects Atlas M10+ replica set called 'testcluster'
         start("mongodb+srv://main_user:badpswd@devtuesreportcluster.s703u.mongodb.net/test",
@@ -1207,7 +1253,7 @@ mod tests {
         // Expects no resolvable cluster
         start("mongodb+srv://usr:passwd@missingcluster.noproj.mongodb.net/test", None, None);
     }
-
+	
 
     // Used from unit tests to assert address is a seed list
     //
