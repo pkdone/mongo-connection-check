@@ -20,7 +20,8 @@ pub enum PingResult {
 
 // Uses the underlying OS ping executable, on the host, to perform a network ICMP ping against a
 // host (DNS name or IP address), returning a result typed to indicate success or the type of
-// failure
+// failure. Avoids opening an ICMP raw socket directly in Rust as this would require this Rust
+// application to have elevated OS privileges
 //
 pub fn ping(host: &str) -> PingResult {
     let mut cmd = &mut Command::new(PING_CMD);

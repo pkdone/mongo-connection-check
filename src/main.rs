@@ -362,8 +362,8 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
             }
         };
 
-        let fut = task::spawn(concurrent_try_open_client_tcp_connection(
-                    hostnm_ipaddr_map.hostname.clone(), *port, ipaddress));
+        let fut = task::spawn(try_open_client_tcp_connection(hostnm_ipaddr_map.hostname.clone(),
+            *port, ipaddress));
         futures.push(fut);
     }
 
@@ -530,7 +530,7 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
         'db.isMaster()' command to check the health of the deployment and to see if any issues are \
         reported";
 
-    match get_dbismaster_response(client_options).await {
+    match get_db_ismaster_response(client_options).await {
         Ok(doc) => {
             if let Ok(msg) = doc.get_str("msg") {
                 if msg == "isdbgrid" {
@@ -731,7 +731,7 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
 
 // Attempt to open TCP connection to deployment returning OK if successful or throwing error it not
 //
-async fn concurrent_try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr)
+async fn try_open_client_tcp_connection(hostname: String, port: u16, ipaddress: IpAddr)
                                                    -> TCPCheckResult {
     let mut ip_check_result = TCPCheckResult{ hostname, port, ipaddress, result: Ok(()) };
     let socket_addr = SocketAddr::new(ipaddress, port);
@@ -795,7 +795,7 @@ async fn get_dbping_response(client_options : &ClientOptions)
 
 // Issue MongoDB Driver ismaster command to deployment and return the command's result document
 //
-async fn get_dbismaster_response(client_options : &ClientOptions)
+async fn get_db_ismaster_response(client_options : &ClientOptions)
                                  -> Result<Document, Box<dyn Error>> {
     let client = Client::with_options(client_options.to_owned())?;
     let database = client.database("test");
@@ -865,6 +865,7 @@ fn capture_no_connection_advice(stg : &mut StageStatus) {
 // * The kind's type is: `std::sync::Arc<mongodb::error::ErrorKind>
 // * The kind's type with a * dereference is: `mongodb::error::ErrorKind`
 // * When kind is dereferenced it needs to be & borrowed again to allow match to access the struct
+//
 fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
     let kind = &err.kind;
 
