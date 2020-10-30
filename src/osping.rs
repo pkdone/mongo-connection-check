@@ -21,7 +21,7 @@ pub enum PingResult {
 // Uses the underlying OS ping executable, on the host, to perform a network ICMP ping against a
 // host (DNS name or IP address), returning a result typed to indicate success or the type of
 // failure. Avoids opening an ICMP raw socket directly in Rust as this would require this Rust
-// application to have elevated OS privileges
+// application to have elevated OS privileges.
 //
 pub fn ping(host: &str) -> PingResult {
     let mut cmd = &mut Command::new(PING_CMD);
@@ -59,11 +59,11 @@ pub fn ping(host: &str) -> PingResult {
                         not a hostname associated with an IP address. OS output received: '{}'",
                         stderr))
                 } else if cfg!(windows) {
-                    // Windows (Window's Ping uses stdout for errors rather than stderr
+                    // Windows (Window's Ping uses stdout for errors rather than stderr)
                     PingResult::ConnectionFailure(format!("Ping returned error. OS output received \
                         - stdout: '{}' - stderr: '{}'", stdout, stderr))
                 } else {
-                    // Unix
+                    // Unix (Ping on Linux correctly uses stderr)
                     PingResult::ConnectionFailure(format!("Ping returned error. OS output \
                         received: '{}'", stderr))
                 }
