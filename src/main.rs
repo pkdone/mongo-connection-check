@@ -143,7 +143,7 @@ async fn start(url: &str, username: Option<&str>, password: Option<&str>) {
 
 // Run each check serially
 //
-async fn run_checks(stages_status : &mut [StageStatus], url: &str, usr: Option<&str>,
+async fn run_checks(stages_status: &mut [StageStatus], url: &str, usr: Option<&str>,
                     pwd: Option<&str>)
                     -> Result<(), Box<dyn Error>> {
     let dns_resolver = TokioAsyncResolver::tokio_from_system_conf().await?;
@@ -169,7 +169,7 @@ async fn run_checks(stages_status : &mut [StageStatus], url: &str, usr: Option<&
 
 // Confirm URL contains seed list of target server(s) or service name
 //
-fn stage1_url_check(stage_index: usize, stages_status : &mut [StageStatus], url: &str)
+fn stage1_url_check(stage_index: usize, stages_status: &mut [StageStatus], url: &str)
                     -> Result<Vec<StreamAddress>, Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
@@ -217,7 +217,7 @@ fn stage1_url_check(stage_index: usize, stages_status : &mut [StageStatus], url:
 
 // Determine list of individual servers (looks up DNS SRV service if defined)
 //
-async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage2_members_check(stage_index: usize, stages_status: &mut [StageStatus],
                               dns_resolver: &AsyncDnsResolver, url: &str,
                               cluster_seed_list: &[StreamAddress])
                               -> Result<Vec<StreamAddress>, Box<dyn Error>> {
@@ -285,7 +285,7 @@ async fn stage2_members_check(stage_index: usize, stages_status : &mut [StageSta
 
 // Determine the IP addresses of each individual server, via DNS
 //
-async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage3_dns_ip_check(stage_index: usize, stages_status: &mut [StageStatus],
                        dns_resolver: &AsyncDnsResolver, cluster_address: &[StreamAddress])
                        -> Result<Vec::<HostnameIP4AddressMap>, Box<dyn Error>> {
     print_stage_header(stage_index);
@@ -343,7 +343,7 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status : &mut [StageStat
 
 // Try each TCP socket concurrently, see see if TCP connection can be made to each
 //
-async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage4_ip_socket_check(stage_index: usize, stages_status: &mut [StageStatus],
                                     hostname_ipaddr_maps: &[HostnameIP4AddressMap])
                                    -> Result<(), Box<dyn Error>> {
     print_stage_header(stage_index);
@@ -427,7 +427,7 @@ async fn stage4_ip_socket_check(stage_index: usize, stages_status : &mut [StageS
 
 // Confirm driver can validate the URL (including SRV resolution if required
 //
-async fn stage5_driver_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage5_driver_check(stage_index: usize, stages_status: &mut [StageStatus],
                              url: &str, usr: Option<&str>, pwd: Option<&str>)
                              -> Result<ClientOptions, MongoError> {
     print_stage_header(stage_index);
@@ -458,7 +458,7 @@ async fn stage5_driver_check(stage_index: usize, stages_status : &mut [StageStat
 
 // Confirm driver can connect to deployment using 'dbping' (warn if errors occur)
 //
-async fn stage6_dbping_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage6_dbping_check(stage_index: usize, stages_status: &mut [StageStatus],
                              url: &str, client_options: &ClientOptions)
                              -> Result<bool, Box<dyn Error>> {
     print_stage_header(stage_index);
@@ -520,7 +520,7 @@ async fn stage6_dbping_check(stage_index: usize, stages_status : &mut [StageStat
 
 // Retrieve the running deployment's member composition & which is the primary
 //
-async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStatus],
+async fn stage7_health_check(stage_index: usize, stages_status: &mut [StageStatus],
                        client_options: &ClientOptions, shared_tier: bool)
                        -> Result<(), Box<dyn Error>> {
     print_stage_header(stage_index);
@@ -597,8 +597,7 @@ async fn stage7_health_check(stage_index: usize, stages_status : &mut [StageStat
 
 // Return true if start of url indicate SRV service name specified
 //
-fn is_srv_url(url: &str)
-              -> bool {
+fn is_srv_url(url: &str) -> bool {
     url.starts_with(MONGO_SRV_PREFIX)
 }
 
@@ -622,7 +621,7 @@ fn get_displayable_address(address: &StreamAddress)
 
 
 // Parse the URL extracting the seed list part (one or more server[:port] elements)
-//
+//cc
 fn extract_cluster_seedlist(url: &str)
                             -> Result<Vec<StreamAddress>, Box<dyn Error>> {
     let regex = Regex::new(r"^mongodb(?:\+srv)??://(?:.*@)?(?P<address>[^/&\?]+)")?;
@@ -696,6 +695,13 @@ async fn get_ipv4_addresses(dns_resolver: &AsyncDnsResolver, cluster_addresses: 
             ipaddress: None,
             port: server_address.port,
         };
+
+        if let Ok(ip_addr) = server_address.hostname.parse::<IpAddr>() {
+            mapping.ipaddress = Some(ip_addr);
+            dns_mappings.push(mapping);
+            continue;
+        }
+
         let hostname_ip_query = format!("{}.", server_address.hostname);
         let lookup_response_wrp = dns_resolver.lookup_ip(hostname_ip_query).await;
 
@@ -757,7 +763,6 @@ async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str
     let mut client_options = ClientOptions::parse(url).await?;
     client_options.app_name = Some(APP_NAME.to_string());
     client_options.server_selection_timeout = Some(Duration::new(CONNECTION_TIMEOUT_SECS, 0));
-
     let mut credentials_modified = false;
 
     let mut cred = match client_options.credential {
@@ -785,8 +790,7 @@ async fn get_mongo_client_options(url: &str, usr: Option<&str>, pwd: Option<&str
 
 // Issue MongoDB Driver dbping command to deployment and return the command's result document
 //
-async fn get_dbping_response(client_options : &ClientOptions)
-                             -> Result<Document, Box<dyn Error>> {
+async fn get_dbping_response(client_options: &ClientOptions) -> Result<Document, Box<dyn Error>> {
     let client = Client::with_options(client_options.to_owned())?;
     let database = client.database("test");
     Ok(database.run_command(doc! {"ping": 1}, None).await?)
@@ -795,7 +799,7 @@ async fn get_dbping_response(client_options : &ClientOptions)
 
 // Issue MongoDB Driver ismaster command to deployment and return the command's result document
 //
-async fn get_db_ismaster_response(client_options : &ClientOptions)
+async fn get_db_ismaster_response(client_options: &ClientOptions)
                                  -> Result<Document, Box<dyn Error>> {
     let client = Client::with_options(client_options.to_owned())?;
     let database = client.database("test");
@@ -805,7 +809,7 @@ async fn get_db_ismaster_response(client_options : &ClientOptions)
 
 // Checks if an ICMP Ping can be successfully made to a host server
 //
-fn check_icmp_ping_connection(hostname :&str, tcp_connected_succesfully: bool) {
+fn check_icmp_ping_connection(hostname: &str, tcp_connected_succesfully: bool) {
     match ping(hostname) {
         PingResult::ConnectionSuccess => {
             if tcp_connected_succesfully {
@@ -845,7 +849,7 @@ fn check_icmp_ping_connection(hostname :&str, tcp_connected_succesfully: bool) {
 
 // Collect together advice when a connection cannot be made to any server in the deployment
 //
-fn capture_no_connection_advice(stg : &mut StageStatus) {
+fn capture_no_connection_advice(stg: &mut StageStatus) {
     stg.advice.push("If using Atlas, via the Atlas console, in the 'Network Access' section, for \
         the 'IP Access List' tab ensure this machine is listed in the access list, and if not, add \
         it ('Add Current IP Address')".to_string());
@@ -878,6 +882,14 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
                     based on a shared replica set, but currently with no matching IP Access List \
                     entry defined to enable access from this machine.   Detail: {}",
                     ERR_MSG_PREFIX, message);
+            } else if message.contains("InvalidDNSNameError") {
+                println!("{}The driver was unable to establish an appropriate connection to the \
+                    deployment, but given that a TCP connection was achieved in an earlier stage, \
+                    and a 'DNS mapping to a server' error was detected in this response from the \
+                    server side, this may indicate that the deployment is an Atlas shared tier \
+                    (M0, M2 or M5) based on a shared replica set, which can only be addressed by \
+                    a set of hostnames (or SRV address) and NOT a set of IP addresses.   Detail: \
+                    {}", ERR_MSG_PREFIX, message);
             } else if message.contains("unexpected end of file") {
                 println!("{}The driver was unable to establish a valid connection to the \
                     deployment, but given that a TCP connection was achieved in an earlier stage, \
@@ -894,7 +906,9 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
 
             capture_older_atlas_versions_advice_if_affected(stg, message);
 
-            if message.contains("os error 104") || !is_srv_url(url) {
+            if message.contains("os error 104") ||
+               message.contains("InvalidDNSNameError") ||
+               !is_srv_url(url) {
                 capture_some_optional_advice_if_affected(stg, url, message);
                 capture_no_connection_advice(stg);
             } else {
@@ -943,6 +957,11 @@ fn capture_some_optional_advice_if_affected(stg: &mut StageStatus, url: &str, er
         stg.advice.push("If the MongoDB deployment is an Atlas M0/M2/M5 tier cluster then via the \
             Atlas console, in the 'Network Access' section, for the 'IP Access List' tab select to \
             'ADD CURRENT IP ADDRESS' which should be the address of this host machine".to_string());
+    } else if errmsg.contains("InvalidDNSNameError") {
+        stg.advice.push("If the MongoDB deployment is an Atlas M0/M2/M5 tier cluster then ensure \
+            in the URL you are defining a 'mongodb+srv://' SRV address or a list of DNS hostnames \
+            and NOT a list of IP addresses, because shared tiers cannot determine which tenant you \
+            want to reference from just a list of IP Addresses in a URL".to_string());
     } else if errmsg.contains("unexpected end of file")
         && !url.contains("tls=true")
         && !url.contains("ssl=true") {
@@ -1077,6 +1096,19 @@ mod tests {
 
 
     #[test]
+    fn unit_test_is_ip_address() {
+        assert!(is_ip_address("127.0.0.1"));
+        assert!(is_ip_address("::1"));
+        assert!(!is_ip_address("localhost"));
+        assert!(is_ip_address("192.168.0.1"));
+        assert!(is_ip_address("86.166.72.82"));
+        assert!(is_ip_address("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
+        assert!(!is_ip_address("www.mongodb.com"));
+        assert!(!is_ip_address("mycluster.a123b.mongodb.net"));
+    }
+
+
+    #[test]
     fn unit_test_addresses_display() {
         let mut address_list = vec![];
         address_list.push(StreamAddress::parse("abc123.mongodb.com:27017").unwrap());
@@ -1172,16 +1204,30 @@ mod tests {
         start(&url, None, None);
     }
 
+
     #[test]
     #[ignore]
     fn integration_test_real_atlas_shared_tier_list() {
         // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
         let url = format!("mongodb://main_user:{}@devtuesreportcluster-shard-00-02.s703u.mongodb.ne\
             t:27017,devtuesreportcluster-shard-00-01.s703u.mongodb.net:27017,devtuesreportcluster-s\
-            hard-00-00.s703u.mongodb.net:27017/7?tls=true&authSource=admin",
+            hard-00-00.s703u.mongodb.net:27017/test?tls=true&authSource=admin",
             get_test_password_panicking_if_missing());
         start(&url, None, None);
     }
+
+
+    #[test]
+    #[ignore]
+    #[should_panic(expected = "InvalidDNSNameError")]
+    fn integration_test_real_atlas_shared_tier_ipaddresses_list() {
+        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
+        let url = format!("mongodb://main_user:{}@63.34.95.190:27017,34.252.0.188:27017,63.35.156.\
+            164:27017/test?tls=true&authSource=admin",
+            get_test_password_panicking_if_missing());
+        start(&url, None, None);
+    }
+
 
     #[test]
     #[ignore]
@@ -1191,6 +1237,7 @@ mod tests {
             s=true&w=majority", get_test_password_panicking_if_missing());
         start(&url, None, None);
     }
+
 
     #[test]
     #[ignore]
@@ -1202,6 +1249,7 @@ mod tests {
         start(&url, None, None);
     }
 
+
     #[test]
     #[ignore]
     fn integration_test_real_atlas_sharded_srv() {
@@ -1210,6 +1258,7 @@ mod tests {
             es=true&w=majority", get_test_password_panicking_if_missing());
         start(&url, None, None);
     }
+
 
     #[test]
     #[ignore]
@@ -1220,6 +1269,7 @@ mod tests {
         start(&url, None, None);
     }
 
+
     #[test]
     #[ignore]
     fn integration_test_localhost_no_auth() {
@@ -1227,6 +1277,16 @@ mod tests {
         let url = format!("mongodb://localhost");
         start(&url, None, None);
     }
+
+
+    #[test]
+    #[ignore]
+    fn integration_test_127_0_0_1_no_auth() {
+        // Expects mongod listening on 127.0.0.1 with no authentication
+        let url = format!("mongodb://127.0.0.1");
+        start(&url, None, None);
+    }
+
 
     #[test]
     #[ignore]
@@ -1238,6 +1298,7 @@ mod tests {
         start(&url, None, None);
     }
 
+
     #[test]
     #[ignore]
     #[should_panic(expected = "SCRAM failure: bad auth")]
@@ -1247,6 +1308,7 @@ mod tests {
             None, None);
     }
 
+
     #[test]
     #[ignore]
     #[should_panic(expected = "NoRecordsFound")]
@@ -1254,7 +1316,7 @@ mod tests {
         // Expects no resolvable cluster
         start("mongodb+srv://usr:passwd@missingcluster.noproj.mongodb.net/test", None, None);
     }
-	
+
 
     // Used from unit tests to assert address is a seed list
     //
@@ -1284,8 +1346,7 @@ mod tests {
 
     // Used from integration tests to get value of password environment variable
     //
-    fn get_test_password_panicking_if_missing()
-                                              -> String {
+    fn get_test_password_panicking_if_missing() -> String {
         let err_msg = format!("Error retrieving value from OS environment variable '{}' which is \
                 intended for use as the password in a test, to connect to a MongoDB cluster - \
                 ensure this environment variable is defined, for example: \n\n\
@@ -1301,6 +1362,13 @@ mod tests {
             }
             Err(_) => panic!(err_msg),
         }
+    }
+
+
+    // Used from unit tests to determines if URL is IPv4 or IPv6 address rather than a hostname
+    //
+    fn is_ip_address(url: &str) -> bool {
+        url.parse::<IpAddr>().is_ok()
     }
 }
 

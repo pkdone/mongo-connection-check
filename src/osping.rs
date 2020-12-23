@@ -19,9 +19,9 @@ pub enum PingResult {
 
 
 // Uses the underlying OS ping executable, on the host, to perform a network ICMP ping against a
-// host (DNS name or IP address), returning a result typed to indicate success or the type of
+// host (DNS name or IP address). Returns a result typed to indicate success or the category of
 // failure. Avoids opening an ICMP raw socket directly in Rust as this would require this Rust
-// application to have elevated OS privileges.
+// application to have elevated OS privileges (hence doesn't use an existing Rust 'ping' library).
 //
 pub fn ping(host: &str) -> PingResult {
     let mut cmd = &mut Command::new(PING_CMD);
@@ -41,7 +41,7 @@ pub fn ping(host: &str) -> PingResult {
                 PingResult::ConnectionFailure(format!("Host '{}' cannot be reached over a network \
                     ICMP Ping", host))
             } else {
-                // Windows for all errors, Unix for non-connection related errors
+                // Windows for all errors, Unix for non-connection related errors (code 2)
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
@@ -70,7 +70,7 @@ pub fn ping(host: &str) -> PingResult {
             }
         }
         Err(e) => {
-            // Errors related to not being able to invoke Ping executable both on Windows & Unix
+            // Errors related to not being able to invoke the Ping executable on Windows / Unix
             if e.kind() == ErrorKind::NotFound {
                 PingResult::OSCmndIssue("Unable to locate 'ping' executable in the local OS \
                     environment - ensure this executable is on your environment path (check your \
