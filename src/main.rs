@@ -93,6 +93,7 @@ fn main() {
                 https://docs.mongodb.com/manual/reference/connection-string/)")
             .takes_value(true))
         .after_help("EXAMPLES:\n    \
+             (use double quotes rather than single quotes on Windows)\n\n    \
              # Connect to Atlas cluster with username & password embedded in URL\n    \
              ./mongo-connection-check 'mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/\
              ?retryWrites=true'\n\n    \
