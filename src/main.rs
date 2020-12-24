@@ -94,14 +94,14 @@ fn main() {
             .takes_value(true))
         .after_help("EXAMPLES:\n    \
              # Connect to Atlas cluster with username & password embedded in URL\n    \
-             ./mongo-connection-check \"mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/\
-             ?retryWrites=true\"\n\n    \
+             ./mongo-connection-check 'mongodb+srv://myusr:pswd@ctr.a1b2.mongodb.net/\
+             ?retryWrites=true'\n\n    \
              # Connect to Atlas cluster with username & password passed in as parameters\n    \
-             ./mongo-connection-check -u mysyr -p pswd \"mongodb+srv://ctr.a1b2s.mongodb\
-             .net/?retryWrites=true\"\n\n    \
+             ./mongo-connection-check -u mysyr -p pswd 'mongodb+srv://ctr.a1b2s.mongodb\
+             .net/?retryWrites=true'\n\n    \
              # Connect to self-managed cluster with username & password embedded in URL\n    \
-             ./mongo-connection-check \"mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/\
-             test?tls=true\"\n\n")
+             ./mongo-connection-check 'mongodb://clstr1.acme.com:27017,clstr2.acme.net:27017/\
+             test?tls=true'\n\n")
         .get_matches();
 
     let url = args.value_of("url").expect("missing url - shouldn't happen as arg is mandatory");
