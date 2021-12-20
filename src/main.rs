@@ -112,7 +112,7 @@ fn main() {
         exit(1);
     }
 
-    start(&url, args.value_of("username"), args.value_of("password"));
+    start(url, args.value_of("username"), args.value_of("password"));
 }
 
 
@@ -230,11 +230,11 @@ async fn stage2_members_check(stage_index: usize, stages_status: &mut [StageStat
             let srv = &cluster_seed_list[0];
             print_slow_dns_warning_if_on_windows();
 
-            match get_srv_host_addresses(dns_resolver, &cluster_seed_list).await {
+            match get_srv_host_addresses(dns_resolver, cluster_seed_list).await {
                 Ok(addresses) => {
                     println!("{}Successfully located a DNS SRV service record for: '{}{}'",
                         INF_MSG_PREFIX, MONGO_SRV_LOOKUP_PREFIX, srv.hostname);
-                    let txt_entries = get_srv_txt_options(dns_resolver, &cluster_seed_list).await?;
+                    let txt_entries = get_srv_txt_options(dns_resolver, cluster_seed_list).await?;
                     let mut has_txt_entry = false;
 
                     for txt_entry in txt_entries {
@@ -297,7 +297,7 @@ async fn stage3_dns_ip_check(stage_index: usize, stages_status: &mut [StageStatu
     const ADVC: &str = "From this machine launch a terminal and use the nslookup tool to query DNS \
         for the IP address of the server hostname  (if nothing is returned, then you have a DNS \
         problem):  'nslookup";
-    let hostname_ipaddress_mappings_res = get_ipv4_addresses(dns_resolver, &cluster_address).await;
+    let hostname_ipaddress_mappings_res = get_ipv4_addresses(dns_resolver, cluster_address).await;
 
     let hostname_ipaddress_mappings = match hostname_ipaddress_mappings_res {
         Ok(hostname_ipaddress_mappings) => {
@@ -504,7 +504,7 @@ async fn stage6_dbping_check(stage_index: usize, stages_status: &mut [StageStatu
         Err(e) => {
             // Downcast err from std::boxed::Box<dyn std::error::Error> to: &mongodb::error::Error
             match e.downcast_ref::<MongoError>() {
-                Some(err) => alert_on_db_error_type(&mut stages_status[stage_index], url, &err),
+                Some(err) => alert_on_db_error_type(&mut stages_status[stage_index], url, err),
                 None =>  println!("{}The driver was unable to establish a valid network connection \
                             to the MongoDB deployment - error message: {}", ERR_MSG_PREFIX,
                             e.to_string()),
@@ -607,7 +607,7 @@ fn is_srv_url(url: &str) -> bool {
 //
 fn get_displayable_addresses(addresses: &[StreamAddress])
                              -> String {
-    let address_str_list: Vec<String> = addresses.iter().map(|addr| get_displayable_address(addr))
+    let address_str_list: Vec<String> = addresses.iter().map(get_displayable_address)
         .collect();
     address_str_list.join(",")
 }
@@ -639,7 +639,7 @@ fn extract_cluster_seedlist(url: &str)
     };
 
     let cluster_seed_list: Result<Vec<_>, _> = seedlist.split(',')
-        .map(|res| StreamAddress::parse(res)).collect();
+        .map(StreamAddress::parse).collect();
     Ok(cluster_seed_list?)  // Need to unwrap and rewrap so that the error is boxed
 }
 
