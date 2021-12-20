@@ -1,0 +1,7 @@
+edition = "2021"
+max_width = 100
+use_small_heuristics = "Max"
+fn_args_layout = "Compressed"
+# wrap_comments = true   # Only available in nightly channel version
+# comment_width = 100    # Only available in nightly channel version
+# format_strings = true  # Only available in nightly channel version

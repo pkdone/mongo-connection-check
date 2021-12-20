@@ -8,7 +8,6 @@ pub const STAGE6: usize = 6;
 pub const STAGE7: usize = 7;
 const TOTAL_STAGES: usize = STAGE7 + 1;
 
-
 // Captures stage name & description
 pub struct Stage {
     pub index: usize,
@@ -16,14 +15,9 @@ pub struct Stage {
     pub desc: &'static str,
 }
 
-
 // Used to define the ordered list of stages to be executed
 pub const STAGES: [Stage; TOTAL_STAGES] = [
-    Stage {
-        index: STAGE0,
-        name: "<setup>",
-        desc: "<setup>",
-    },
+    Stage { index: STAGE0, name: "<setup>", desc: "<setup>" },
     Stage {
         index: STAGE1,
         name: "URL-CHECK",
@@ -61,8 +55,6 @@ pub const STAGES: [Stage; TOTAL_STAGES] = [
     },
 ];
 
-
-
 // Success type for a stage
 #[derive(Debug)]
 pub enum StageState {
@@ -72,61 +64,26 @@ pub enum StageState {
     Failed,
 }
 
-
-// Trackes whether stage worked and what advice given for it, if anything
+// Tracks whether stage worked and what advice given for it, if anything
 pub struct StageStatus {
     pub index: usize,
     pub state: StageState,
     pub advice: Vec<String>,
 }
 
-
 // Initialise the list of stage structures for tracking stage checks to all be 'NotTested'
 //
 impl StageStatus {
     pub fn new_set() -> [StageStatus; TOTAL_STAGES] {
         [
-            StageStatus {
-                index: STAGE0,
-                state: StageState::NotApplicable,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE1,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE2,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE3,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE4,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE5,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE6,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
-            StageStatus {
-                index: STAGE7,
-                state: StageState::NotTested,
-                advice: vec![],
-            },
+            StageStatus { index: STAGE0, state: StageState::NotApplicable, advice: vec![] },
+            StageStatus { index: STAGE1, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE2, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE3, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE4, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE5, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE6, state: StageState::NotTested, advice: vec![] },
+            StageStatus { index: STAGE7, state: StageState::NotTested, advice: vec![] },
         ]
     }
 }
-

@@ -109,7 +109,12 @@ cargo test
 TEST_PASSWD="mypasswd" cargo test -- --ignored  --show-output
 ```
  
- * _OPTIONAL_: Run the project's _lint_ checks (to catch common mistakes and suggest where code can be improved):
+ * _OPTIONAL_: Run Rust's _lint_ checks against the project (to catch common mistakes and suggest where code can be improved):
+```console
+cargo clippy
+```
+
+ * _OPTIONAL_: Run Rust's _layout format_ checks against the project (to ensure consistent code formatting is used and highlight places where they're not):
 ```console
 cargo clippy
 ```
