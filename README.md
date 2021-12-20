@@ -12,7 +12,7 @@ The checks this tool performs are based on the blog post [Some Tips for Diagnosi
  * [Windows 10](https://github.com/pkdone/mongo-connection-check/releases/download/1.2.1/mongo-connection-check-windows-x86_64-121.exe)
  * [Max OS X](https://github.com/pkdone/mongo-connection-check/releases/download/1.2.1/mongo-connection-check-macos-x86_64-121)
 
-_NOTE:_ __Rename__ the file once download, removing the last part of the name, to just be called __mongo-connection-check__ (or __mongo-connection-check.exe__ on Windows)
+_NOTE:_ __Rename__ the file once downloaded, removing the last part of the name, to just be called __mongo-connection-check__ (or __mongo-connection-check.exe__ on Windows)
 
 These downloads are for the latest version of _mongo-connection-check_ (version __1.2.1__). For earlier versions, see this project's [releases page](https://github.com/pkdone/mongo-connection-check/releases)
 
@@ -121,5 +121,5 @@ cat src/main.rs | awk 'length($0) > 100'
 
 ## Potential Future Enhancements
 
-* __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool sometimes appearing to hang for a period at the affected different stages.
+* __Windows DNS Lookup Stall__. Fix stall issue on Windows, for the stages that require a DNS lookup, resulting in the tool sometimes appearing to hang for a period of time at the different affected stages.
 

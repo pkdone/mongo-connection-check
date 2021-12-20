@@ -1199,8 +1199,8 @@ mod tests {
     #[test]
     #[ignore]
     fn integration_test_real_atlas_shared_tier_srv() {
-        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
-        let url = format!("mongodb+srv://main_user:{}@devtuesreportcluster.s703u.mongodb.net/test",
+        // Expects Atlas M0/M2/M5 shared tier called 'sandboxcluster'
+        let url = format!("mongodb+srv://main_user:{}@sandboxcluster.s703u.mongodb.net/test",
             get_test_password_panicking_if_missing());
         start(&url, None, None);
     }
@@ -1209,9 +1209,9 @@ mod tests {
     #[test]
     #[ignore]
     fn integration_test_real_atlas_shared_tier_list() {
-        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
-        let url = format!("mongodb://main_user:{}@devtuesreportcluster-shard-00-02.s703u.mongodb.ne\
-            t:27017,devtuesreportcluster-shard-00-01.s703u.mongodb.net:27017,devtuesreportcluster-s\
+        // Expects Atlas M0/M2/M5 shared tier called 'sandboxcluster'
+        let url = format!("mongodb://main_user:{}@sandboxcluster-shard-00-02.s703u.mongodb.ne\
+            t:27017,sandboxcluster-shard-00-01.s703u.mongodb.net:27017,sandboxcluster-s\
             hard-00-00.s703u.mongodb.net:27017/test?tls=true&authSource=admin",
             get_test_password_panicking_if_missing());
         start(&url, None, None);
@@ -1222,7 +1222,7 @@ mod tests {
     #[ignore]
     #[should_panic(expected = "InvalidDNSNameError")]
     fn integration_test_real_atlas_shared_tier_ipaddresses_list() {
-        // Expects Atlas M0/M2/M5 shared tier called 'devtuesreportcluster'
+        // Expects Atlas M0/M2/M5 shared tier called 'sandboxcluster'
         let url = format!("mongodb://main_user:{}@63.34.95.190:27017,34.252.0.188:27017,63.35.156.\
             164:27017/test?tls=true&authSource=admin",
             get_test_password_panicking_if_missing());
@@ -1305,7 +1305,7 @@ mod tests {
     #[should_panic(expected = "SCRAM failure: bad auth")]
     fn integration_test_real_atlas_cluster_bad_passwd() {
         // Expects Atlas M10+ replica set called 'testcluster'
-        start("mongodb+srv://main_user:badpswd@devtuesreportcluster.s703u.mongodb.net/test",
+        start("mongodb+srv://main_user:badpswd@sandboxcluster.s703u.mongodb.net/test",
             None, None);
     }
 
@@ -1339,7 +1339,7 @@ mod tests {
             }
             Err(e) => {
                 // True if there was no seedlist in the URL which caused the error
-                assert!((hosts.len() <= 0), e.to_string())
+                assert!((hosts.len() <= 0), "{}", e.to_string())
             }
         };
     }
@@ -1356,12 +1356,12 @@ mod tests {
         match env::var(PASSWD_ENV_VAR) {
             Ok(passwd) => {
                 if passwd.is_empty() {
-                    panic!(err_msg);
+                    panic!("{}", err_msg);
                 } else {
                     passwd
                 }
             }
-            Err(_) => panic!(err_msg),
+            Err(_) => panic!("{}", err_msg),
         }
     }
 

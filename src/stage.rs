@@ -57,7 +57,7 @@ pub const STAGES: [Stage; TOTAL_STAGES] = [
     Stage {
         index: STAGE7,
         name: "HEALTH-CHECK",
-        desc: "Retrieve running cluster's deployment type & statys",
+        desc: "Retrieve running cluster's deployment type & status",
     },
 ];
 
