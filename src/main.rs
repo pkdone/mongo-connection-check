@@ -3,7 +3,7 @@ use futures::future::join_all;
 use mongodb::{
     bson::{doc, Bson, Document},
     error::{Error as MongoError, ErrorKind as MongoErrorKind},
-    options::{ClientOptions, Credential, StreamAddress},
+    options::{ClientOptions, Credential, ServerAddress},
     Client,
 };
 use regex::Regex;
@@ -146,7 +146,7 @@ async fn start(url: &str, username: Option<&str>, password: Option<&str>) {
 async fn run_checks(
     stages_status: &mut [StageStatus], url: &str, usr: Option<&str>, pwd: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
-    let dns_resolver = TokioAsyncResolver::tokio_from_system_conf().await?;
+    let dns_resolver = TokioAsyncResolver::tokio_from_system_conf()?;
     // STAGE 1:
     let cluster_seed_list = stage1_url_check(STAGE1, stages_status, url)?;
     // STAGE 2:
@@ -170,7 +170,7 @@ async fn run_checks(
 //
 fn stage1_url_check(
     stage_index: usize, stages_status: &mut [StageStatus], url: &str,
-) -> Result<Vec<StreamAddress>, Box<dyn Error>> {
+) -> Result<Vec<ServerAddress>, Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
 
@@ -235,8 +235,8 @@ fn stage1_url_check(
 //
 async fn stage2_members_check(
     stage_index: usize, stages_status: &mut [StageStatus], dns_resolver: &AsyncDnsResolver,
-    url: &str, cluster_seed_list: &[StreamAddress],
-) -> Result<Vec<StreamAddress>, Box<dyn Error>> {
+    url: &str, cluster_seed_list: &[ServerAddress],
+) -> Result<Vec<ServerAddress>, Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
 
@@ -244,58 +244,64 @@ async fn stage2_members_check(
         let srv = &cluster_seed_list[0];
         print_slow_dns_warning_if_on_windows();
 
-        match get_srv_host_addresses(dns_resolver, cluster_seed_list).await {
-            Ok(addresses) => {
-                println!(
-                    "{}Successfully located a DNS SRV service record for: '{}{}'",
-                    INF_MSG_PREFIX, MONGO_SRV_LOOKUP_PREFIX, srv.hostname
-                );
-                let txt_entries = get_srv_txt_options(dns_resolver, cluster_seed_list).await?;
-                let mut has_txt_entry = false;
-
-                for txt_entry in txt_entries {
+        if let ServerAddress::Tcp { host, port: _port } = srv {
+            match get_srv_host_addresses(dns_resolver, cluster_seed_list).await {
+                Ok(addresses) => {
                     println!(
-                        "{}SRV service for the cluster has the following DNS TXT parameters \
-                        which will automatically be added as connection options: '{}'",
-                        INF_MSG_PREFIX, txt_entry
+                        "{}Successfully located a DNS SRV service record for: '{}{}'",
+                        INF_MSG_PREFIX, MONGO_SRV_LOOKUP_PREFIX, host
                     );
-                    has_txt_entry = true;
-                }
+                    let txt_entries = get_srv_txt_options(dns_resolver, cluster_seed_list).await?;
+                    let mut has_txt_entry = false;
 
-                if !has_txt_entry {
+                    for txt_entry in txt_entries {
+                        println!(
+                            "{}SRV service for the cluster has the following DNS TXT parameters \
+                            which will automatically be added as connection options: '{}'",
+                            INF_MSG_PREFIX, txt_entry
+                        );
+                        has_txt_entry = true;
+                    }
+
+                    if !has_txt_entry {
+                        println!(
+                            "{}SRV service for the cluster has DNS TXT parameters defined",
+                            INF_MSG_PREFIX
+                        );
+                    }
+
+                    addresses
+                }
+                Err(e) => {
                     println!(
-                        "{}SRV service for the cluster has DNS TXT parameters defined",
-                        INF_MSG_PREFIX
+                        "{}Unable to determine the raw host addresses/ports because the SRV DNS \
+                        service record caannot be located for: '{}{}' - error message: {}",
+                        ERR_MSG_PREFIX,
+                        MONGO_SRV_LOOKUP_PREFIX,
+                        host,
+                        e.to_string()
                     );
+                    stages_status[stage_index].advice.push(format!(
+                        "From this machine launch a terminal and use the nslookup tool to query \
+                        DNS for the SRV service which is supposed to return the list of actual \
+                        member server hostnames and ports (if it does not, then you have a DNS \
+                        problem): 'nslookup -q=SRV {}{}'",
+                        MONGO_SRV_LOOKUP_PREFIX, host
+                    ));
+                    stages_status[stage_index].advice.push(format!(
+                        "If this is an Atlas based deployment, in the Atlas console, locate the \
+                        cluster and press the 'Connect' button to see the connection details for \
+                        the cluster - the SRV name part of the URL it displays should match the \
+                        following SRV name in the URL you specified to this tool: '{}'",
+                        host
+                    ));
+                    return Err(e);
                 }
-
-                addresses
             }
-            Err(e) => {
-                println!(
-                    "{}Unable to determine the raw host addresses/ports because the SRV DNS \
-                    service record caannot be located for: '{}{}' - error message: {}",
-                    ERR_MSG_PREFIX,
-                    MONGO_SRV_LOOKUP_PREFIX,
-                    srv.hostname,
-                    e.to_string()
-                );
-                stages_status[stage_index].advice.push(format!(
-                    "From this machine launch a terminal and use the nslookup tool to query DNS \
-                    for the SRV service which is supposed to return the list of actual member \
-                    server hostnames and ports (if it does not, then you have a DNS problem): \
-                   'nslookup -q=SRV {}{}'",
-                    MONGO_SRV_LOOKUP_PREFIX, srv.hostname
-                ));
-                stages_status[stage_index].advice.push(format!(
-                    "If this is an Atlas based deployment, in the Atlas console, locate the \
-                    cluster and press the 'Connect' button to see the connection details for the \
-                    cluster - the SRV name part of the URL it displays should match the following \
-                    SRV name in the URL you specified to this tool: '{}'",
-                    srv.hostname
-                ));
-                return Err(e);
-            }
+        } else {
+            const MSG: &str = "Server address does not match a TCP server host: ";
+            println!("{}{}{}", ERR_MSG_PREFIX, MSG, srv.to_string());
+            return Err(MSG.into());
         }
     } else {
         println!(
@@ -325,7 +331,7 @@ async fn stage2_members_check(
 //
 async fn stage3_dns_ip_check(
     stage_index: usize, stages_status: &mut [StageStatus], dns_resolver: &AsyncDnsResolver,
-    cluster_address: &[StreamAddress],
+    cluster_address: &[ServerAddress],
 ) -> Result<Vec<HostnameIP4AddressMap>, Box<dyn Error>> {
     print_stage_header(stage_index);
     stages_status[stage_index].state = StageState::Failed;
@@ -383,8 +389,13 @@ async fn stage3_dns_ip_check(
                 get_displayable_addresses(cluster_address),
                 e.to_string()
             );
-            let first_addr = &cluster_address[0];
-            stages_status[stage_index].advice.push(format!("{} {}'", ADVC, first_addr.hostname));
+
+            let hostname = match &cluster_address[0] {
+                ServerAddress::Tcp { host, port: _port } => host,
+                _ => "<non-tcp-host>",
+            };
+
+            stages_status[stage_index].advice.push(format!("{} {}'", ADVC, hostname));
             return Err(e.into());
         }
     };
@@ -525,12 +536,19 @@ async fn stage5_driver_check(
         }
     };
 
-    for host in client_options.hosts.iter() {
+    for server in client_options.hosts.iter() {
+        let non_host = String::from("<non-tcp-host>");
+
+        let (hostname, port) = match server {
+            ServerAddress::Tcp { host, port } => (host, port),
+            _ => (&non_host, &Some(MONGODB_DEFAULT_LISTEN_PORT)),
+        };
+
         println!(
             "{}From the specified URL, the driver resolved the following member server: '{}:{}'",
             INF_MSG_PREFIX,
-            host.hostname,
-            host.port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT)
+            hostname,
+            port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT)
         );
     }
 
@@ -713,20 +731,27 @@ fn is_srv_url(url: &str) -> bool {
 
 // Create a string representation of all the addreses, comma separated
 //
-fn get_displayable_addresses(addresses: &[StreamAddress]) -> String {
+fn get_displayable_addresses(addresses: &[ServerAddress]) -> String {
     let address_str_list: Vec<String> = addresses.iter().map(get_displayable_address).collect();
     address_str_list.join(",")
 }
 
 // Concatenate hostname and port into string separated by ':'
 //
-fn get_displayable_address(address: &StreamAddress) -> String {
-    format!("{}:{}", address.hostname, address.port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT))
+fn get_displayable_address(address: &ServerAddress) -> String {
+    let non_host = String::from("<non-tcp-host>");
+
+    let (hostname, port) = match address {
+        ServerAddress::Tcp { host, port } => (host, port),
+        _ => (&non_host, &Some(MONGODB_DEFAULT_LISTEN_PORT)),
+    };
+
+    format!("{}:{}", hostname, port.unwrap_or(MONGODB_DEFAULT_LISTEN_PORT))
 }
 
 // Parse the URL extracting the seed list part (one or more server[:port] elements)
 //cc
-fn extract_cluster_seedlist(url: &str) -> Result<Vec<StreamAddress>, Box<dyn Error>> {
+fn extract_cluster_seedlist(url: &str) -> Result<Vec<ServerAddress>, Box<dyn Error>> {
     let regex = Regex::new(r"^mongodb(?:\+srv)??://(?:.*@)?(?P<address>[^/&\?]+)")?;
     let err_msg = format!("Unable to find a seed list in the provided MongoDB URL: '{}'", url);
 
@@ -741,17 +766,23 @@ fn extract_cluster_seedlist(url: &str) -> Result<Vec<StreamAddress>, Box<dyn Err
     };
 
     let cluster_seed_list: Result<Vec<_>, _> =
-        seedlist.split(',').map(StreamAddress::parse).collect();
+        seedlist.split(',').map(ServerAddress::parse).collect();
     Ok(cluster_seed_list?) // Need to unwrap and rewrap so that the error is boxed
 }
 
 // Perform a DNS SRV lookup for a service name returning hostnames this maps to
 //
 async fn get_srv_host_addresses(
-    dns_resolver: &AsyncDnsResolver, cluster_seed_list: &[StreamAddress],
-) -> Result<Vec<StreamAddress>, Box<dyn Error>> {
-    let address = &cluster_seed_list[0];
-    let srv_hostname_query = format!("{}{}.", MONGO_SRV_LOOKUP_PREFIX, address.hostname);
+    dns_resolver: &AsyncDnsResolver, cluster_seed_list: &[ServerAddress],
+) -> Result<Vec<ServerAddress>, Box<dyn Error>> {
+    let non_host = String::from("<non-tcp-host>");
+
+    let hostname = match &cluster_seed_list[0] {
+        ServerAddress::Tcp { host, port: _port } => host,
+        _ => &non_host,
+    };
+
+    let srv_hostname_query = format!("{}{}.", MONGO_SRV_LOOKUP_PREFIX, hostname);
     let lookup_response = dns_resolver.srv_lookup(srv_hostname_query).await?;
 
     let srv_addresses: Vec<_> = lookup_response
@@ -759,7 +790,7 @@ async fn get_srv_host_addresses(
         .map(|record| {
             let hostname = record.target().to_utf8().trim_end_matches('.').to_owned();
             let port = Some(record.port());
-            StreamAddress { hostname, port }
+            ServerAddress::Tcp { host: hostname, port }
         })
         .collect();
 
@@ -769,10 +800,16 @@ async fn get_srv_host_addresses(
 // Perform a DNS TXT lookup for a service name returning any defined connection options
 //
 async fn get_srv_txt_options(
-    dns_resolver: &AsyncDnsResolver, cluster_seed_list: &[StreamAddress],
+    dns_resolver: &AsyncDnsResolver, cluster_seed_list: &[ServerAddress],
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let address = &cluster_seed_list[0];
-    let txt_hostname_query = format!("{}.", address.hostname);
+    let non_host = String::from("<non-tcp-host>");
+
+    let hostname = match &cluster_seed_list[0] {
+        ServerAddress::Tcp { host, port: _port } => host,
+        _ => &non_host,
+    };
+
+    let txt_hostname_query = format!("{}.", hostname);
     let lookup_response = dns_resolver.txt_lookup(txt_hostname_query).await?;
     let mut string_list = vec![];
 
@@ -788,25 +825,29 @@ async fn get_srv_txt_options(
 // Perform a DNS lookup of the IP address for a given hostname
 //
 async fn get_ipv4_addresses(
-    dns_resolver: &AsyncDnsResolver, cluster_addresses: &[StreamAddress],
+    dns_resolver: &AsyncDnsResolver, cluster_addresses: &[ServerAddress],
 ) -> Result<Vec<HostnameIP4AddressMap>, ResolveError> {
     let mut dns_mappings = Vec::<HostnameIP4AddressMap>::new();
     let mut first_err = None;
 
     for server_address in cluster_addresses {
-        let mut mapping = HostnameIP4AddressMap {
-            hostname: server_address.hostname.to_string(),
-            ipaddress: None,
-            port: server_address.port,
+        let non_host = String::from("<non-tcp-host>");
+
+        let (hostname, port) = match server_address {
+            ServerAddress::Tcp { host, port } => (host, port),
+            _ => (&non_host, &Some(MONGODB_DEFAULT_LISTEN_PORT)),
         };
 
-        if let Ok(ip_addr) = server_address.hostname.parse::<IpAddr>() {
+        let mut mapping =
+            HostnameIP4AddressMap { hostname: hostname.to_string(), ipaddress: None, port: *port };
+
+        if let Ok(ip_addr) = hostname.parse::<IpAddr>() {
             mapping.ipaddress = Some(ip_addr);
             dns_mappings.push(mapping);
             continue;
         }
 
-        let hostname_ip_query = format!("{}.", server_address.hostname);
+        let hostname_ip_query = format!("{}.", hostname);
         let lookup_response_wrp = dns_resolver.lookup_ip(hostname_ip_query).await;
 
         match lookup_response_wrp {
@@ -1002,7 +1043,7 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
     let kind = &err.kind;
 
     match &*kind.to_owned() {
-        MongoErrorKind::ServerSelectionError { message, .. } => {
+        MongoErrorKind::ServerSelection { message, .. } => {
             if message.contains("os error 104") {
                 println!(
                     "{}The driver was unable to establish a valid connection to the deployment, \
@@ -1054,7 +1095,7 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
                 capture_some_optional_advice_if_affected(stg, url, message);
             }
         }
-        MongoErrorKind::AuthenticationError { message, .. } => {
+        MongoErrorKind::Authentication { message, .. } => {
             println!(
                 "{}The driver was able to establish a TCP connection to at least one server in the \
                 MongoDB deployment, but failed to authenticate using the provided username/password\
@@ -1079,7 +1120,7 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
                     .to_string(),
             );
         }
-        MongoErrorKind::ArgumentError { message, .. } => {
+        MongoErrorKind::InvalidArgument { message, .. } => {
             println!(
                 "{}The driver found problems in the URL string specified and therefore did not \
                 attempt to test TCP connectivity.   Detail: {}",
@@ -1183,7 +1224,7 @@ fn print_slow_dns_warning_if_on_windows() {
 
 // Print out the address of each server in a list
 //
-fn print_address_list_members(prefix: &str, addresses: &[StreamAddress]) {
+fn print_address_list_members(prefix: &str, addresses: &[ServerAddress]) {
     let mut i = 1;
 
     for address in addresses.iter() {
@@ -1279,22 +1320,22 @@ mod tests {
     #[test]
     fn unit_test_addresses_display() {
         let mut address_list = vec![];
-        address_list.push(StreamAddress::parse("abc123.mongodb.com:27017").unwrap());
-        address_list.push(StreamAddress::parse("xyz789.mongodb.com:27017").unwrap());
+        address_list.push(ServerAddress::parse("abc123.mongodb.com:27017").unwrap());
+        address_list.push(ServerAddress::parse("xyz789.mongodb.com:27017").unwrap());
         assert_eq!(
             get_displayable_addresses(&address_list),
             "abc123.mongodb.com:27017,xyz789.mongodb.com:27017"
         );
         let mut address_list = vec![];
-        address_list.push(StreamAddress::parse("abc123.mongodb.com:27017").unwrap());
-        address_list.push(StreamAddress::parse("pqr456.mongodb.com").unwrap());
-        address_list.push(StreamAddress::parse("xyz789.mongodb.com:27017").unwrap());
+        address_list.push(ServerAddress::parse("abc123.mongodb.com:27017").unwrap());
+        address_list.push(ServerAddress::parse("pqr456.mongodb.com").unwrap());
+        address_list.push(ServerAddress::parse("xyz789.mongodb.com:27017").unwrap());
         assert_eq!(
             get_displayable_addresses(&address_list),
             "abc123.mongodb.com:27017,pqr456.mongodb.com:27017,xyz789.mongodb.com:27017"
         );
         let mut address_list = vec![];
-        address_list.push(StreamAddress::parse("localhost").unwrap());
+        address_list.push(ServerAddress::parse("localhost").unwrap());
         assert_eq!(get_displayable_addresses(&address_list), "localhost:27017");
     }
 
@@ -1566,9 +1607,16 @@ mod tests {
                 let mut pos = 0;
 
                 for address in address_list {
-                    assert_eq!(address.hostname, hosts[pos]);
+                    let non_host = String::from("<non-tcp-host>");
 
-                    if let Some(port) = address.port {
+                    let (hostname, port) = match address {
+                        ServerAddress::Tcp { host, port } => (host, port),
+                        _ => (non_host, Some(MONGODB_DEFAULT_LISTEN_PORT)),
+                    };
+
+                    assert_eq!(hostname, hosts[pos]);
+
+                    if let Some(port) = port {
                         assert_eq!(port, ports[pos]);
                     }
 

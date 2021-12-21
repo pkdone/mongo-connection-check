@@ -116,7 +116,7 @@ cargo clippy
 
  * _OPTIONAL_: Run Rust's _layout format_ checks against the project (to ensure consistent code formatting is used and highlight places where they're not):
 ```console
-cargo clippy
+cargo fmt -- --check
 ```
 
  * _OPTIONAL_: Highlight any lines of code which have a length greater than 100 characters:
