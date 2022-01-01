@@ -106,7 +106,7 @@ cargo test
  
  * _OPTIONAL_: Run the project's _integrations tests_ (note, requires specific MongoDB deployments to already be running, which are not documented here; also requires changing the target cluster password shown below from 'mypasswd' to the real password):
 ```console
-TEST_PASSWD="mypasswd" cargo test -- --ignored  --show-output
+TEST_PASSWD="mypasswd" cargo test -- --ignored --show-output
 ```
  
  * _OPTIONAL_: Run Rust's _lint_ checks against the project (to catch common mistakes and suggest where code can be improved):
