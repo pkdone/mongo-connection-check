@@ -35,7 +35,7 @@ struct HostnameIP4AddressMap {
     ipaddress: Option<IpAddr>,
 }
 
-// Stores the result of a TCP connection attempt to host
+// Stores the result of a TCP connection attempt to a host
 struct TCPCheckResult {
     hostname: String,
     port: u16,
@@ -713,7 +713,7 @@ async fn stage7_health_check(
     if !is_identified {
         const MSG: &str = "The driver returned an empty list of server members in response to the \
                           'ismaster' command and the deployment cannot correctly be identified as \
-                          a standalone, a replica set or a sharded deployment";
+                          a standalone, replica set or sharded deployment";
         println!("{}{}", ERR_MSG_PREFIX, MSG);
         stages_status[stage_index].advice.push(ADVC.to_string());
         return Err(MSG.into());
@@ -750,7 +750,7 @@ fn get_displayable_address(address: &ServerAddress) -> String {
 }
 
 // Parse the URL extracting the seed list part (one or more server[:port] elements)
-//cc
+//
 fn extract_cluster_seedlist(url: &str) -> Result<Vec<ServerAddress>, Box<dyn Error>> {
     let regex = Regex::new(r"^mongodb(?:\+srv)??://(?:.*@)?(?P<address>[^/&\?]+)")?;
     let err_msg = format!("Unable to find a seed list in the provided MongoDB URL: '{}'", url);
@@ -1127,7 +1127,7 @@ fn alert_on_db_error_type(stg: &mut StageStatus, url: &str, err: &MongoError) {
                 ERR_MSG_PREFIX, message
             );
             stg.advice.push(
-                "Check the URL and ensure its parameters are well formed and MATCH THE FORMAT \
+                "Check the URL and ensure its parameters are well formed and MATCHES THE FORMAT \
                 specification documented at:
                 https://docs.mongodb.com/manual/reference/connection-string/"
                     .to_string(),
